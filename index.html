@@ -481,6 +481,38 @@ main.enter .th-fill{animation:grow .9s cubic-bezier(.2,.7,.2,1) both}
 .brandname small{flex-basis:100%}
 .gstats b{overflow-wrap:normal;white-space:nowrap}
 @media(max-width:720px){.gstats b{font-size:19px}.brandname{font-size:17px}}
+
+/* v8: plano de faturamento */
+.plan .tiers{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-top:12px}
+.tier{border-radius:12px;padding:11px 13px;background:var(--card-2);border-left:4px solid var(--tcol)}
+.tier small{display:block;font:600 11px var(--f-body);letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.tier b{display:block;font:700 22px/1.15 var(--f-display);margin-top:2px;white-space:nowrap}
+.tier span{display:block;font-size:12.5px;color:var(--muted);margin-top:1px}
+.tier.t1{--tcol:#2FA566}.tier.t2{--tcol:#E8B923}.tier.t3{--tcol:#9FB0BE}
+.pmap{position:relative;margin:26px 0 6px}
+.pmap-bar{display:flex;height:22px;border-radius:10px;overflow:hidden;background:var(--ice)}
+.pmap-bar i{display:block;height:100%}
+.pmap-bar .s0{background:var(--ink)}.pmap-bar .s1{background:#2FA566}.pmap-bar .s2{background:#E8B923}
+.pmap-bar .s3{background:repeating-linear-gradient(135deg,#C3CED7 0 5px,#E4EAEF 5px 10px)}
+.pmap-meta{position:absolute;top:-6px;bottom:-6px;width:2px;background:var(--red);transform:translateX(-1px);border-radius:1px}
+.pmap-meta span{position:absolute;top:-17px;left:50%;transform:translateX(-50%);font:700 11px var(--f-body);color:var(--red);white-space:nowrap}
+.pmap-meta.r span{left:auto;right:0;transform:none}
+main.enter .pmap-bar i{animation:grow .9s cubic-bezier(.2,.7,.2,1) both}
+.pleg{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px;color:var(--muted);margin-top:8px}
+.pleg span{display:inline-flex;align-items:center;gap:6px}
+.pleg b{width:11px;height:11px;border-radius:3px;display:inline-block}
+.pl-list{margin-top:10px}
+.pl-row{display:grid;grid-template-columns:28px minmax(0,1fr) 150px 150px;gap:4px 12px;align-items:center;padding:9px 10px;border-radius:10px}
+.pl-row:hover{background:var(--card-2)}
+.pl-row .n{font:700 17px var(--f-display);color:var(--muted)}
+.pl-row .nm{min-width:0;overflow-wrap:anywhere}
+.pl-row .nm b{font-weight:700;letter-spacing:.03em}
+.pl-row .nm span{display:block;font-size:12.5px;color:var(--muted)}
+.pl-row .v{text-align:right;font:700 17px var(--f-display);letter-spacing:.01em}
+.pl-row .v small{display:block;font:500 11.5px var(--f-body);color:var(--muted);letter-spacing:0}
+.pl-row.in{background:#EDF7F1;box-shadow:inset 3px 0 0 #2FA566}
+.pl-cut{margin:6px 0;padding:6px 12px;border-radius:8px;border:1.5px dashed var(--red);color:var(--red-dark);font:700 12px var(--f-body);text-align:center}
+@media(max-width:720px){.pl-row{grid-template-columns:24px minmax(0,1fr) auto}.pl-row .pill{grid-column:2;justify-self:start}.pl-row .v{grid-row:1;grid-column:3}.pl-row .n{grid-row:1}}
 </style>
 
 </head>
@@ -1157,6 +1189,62 @@ function startAutoRefresh(){
 
 
 
+
+/* ============ PLANO DE FATURAMENTO ============ */
+const PL_ACAO=['Confirmar entrada','Cobrar o orçamento','Fechar o orçamento','Ligar para o cliente','Acompanhar a execução','Cobrar a chegada das peças'];
+function planCalc(G){
+  const k=monthKey(NOW);
+  const open=CH.filter(o=>!o.fat&&monthKey(o.base)===k);
+  const nf=open.filter(o=>o.valor>0), semValor=open.length-nf.length;
+  const old=CH.filter(o=>!o.fat&&monthKey(o.base)!==k&&o.valor>0);
+  const tier=o=>!o.open?1:(o.last>=4?2:3);
+  const list=nf.map(o=>({o,t:tier(o)})).sort((a,b)=>a.t-b.t||b.o.valor-a.o.valor);
+  let acc=0; list.forEach(x=>{ acc+=x.o.valor; x.acc=acc; });
+  const tot=[0,0,0,0], cnt=[0,0,0,0]; list.forEach(x=>{ tot[x.t]+=x.o.valor; cnt[x.t]++; });
+  const dayGoal=G.batida?0:(G.porDia!=null?G.porDia:G.falta);
+  const basket=[]; let bs=0; for(const x of list){ if(bs>=dayGoal) break; basket.push(x); bs+=x.o.valor; }
+  const cut=G.batida?-1:list.findIndex(x=>x.acc>=G.falta);
+  return {list,tot,cnt,dayGoal,basket,bs,cut,total:acc,semValor,old,oldSum:old.reduce((t,o)=>t+o.valor,0)};
+}
+function planCard(){
+  const G=goalCalc(), P=planCalc(G), M=G.meta;
+  const base=G.real, c1=base+P.tot[1], c2=c1+P.tot[2], c3=c2+P.tot[3];
+  const sc=Math.max(M,c3,1), w=v=>(v/sc*100).toFixed(2)+'%', mp=M/sc*100;
+  const p=v=>pct(v,M)+'%';
+  const tierCard=(t,l,sub)=>`<div class="tier t${t}"><small>${l}</small><b class="num">${BRL.format(P.tot[t])}</b><span>${P.cnt[t]} OS · ${sub}${P.cnt[t]?' → '+p(t===1?c1:t===2?c2:c3)+' da meta':''}</span></div>`;
+  const tag={1:['green','Pronta p/ faturar'],2:['amber','Em execução'],3:['grey','Depende do cliente']};
+  const inB=new Set(P.basket.map(x=>x.o));
+  const show=P.list.slice(0,Math.min(P.list.length,Math.max(12,P.cut+2),25));
+  const rows=show.map((x,i)=>{
+    const o=x.o;
+    const acao=x.t===1?'Emitir a nota · finalizada há '+fmtH(o.ts[6]?NOW-o.ts[6]:0):PL_ACAO[o.last]+' · parada há '+fmtH(o.openMs);
+    return `<div class="pl-row ${inB.has(o)?'in':''}"><span class="n">${i+1}</span>
+      <div class="nm"><b>${esc(o.placa||'—')}</b> · ${esc(titleCase(o.cliente)||'Sem cliente')}<span>${acao}${inB.has(o)?' · cesta de hoje':''}</span></div>
+      <span class="pill ${tag[x.t][0]}">${tag[x.t][1]}</span>
+      <div class="v num">${BRL.format(o.valor)}<small>acumulado ${BRL.format(x.acc)}</small></div></div>${i===P.cut?`<div class="pl-cut">Faturando até aqui (${BRL.format(x.acc)}), a meta do mês é atingida</div>`:''}`;
+  }).join('');
+  let msg;
+  if(!P.list.length) msg='Não há OS sem faturar com valor preenchido neste mês.';
+  else if(G.batida) msg=`A meta do mês já foi batida. Faturar as OS prontas (${BRL.format(P.tot[1])}) ainda melhora o caixa.`;
+  else {
+    const pl=P.basket.slice(0,5).map(x=>x.o.placa||'sem placa').join(', ')+(P.basket.length>5?' +'+(P.basket.length-5):'');
+    const ready=P.basket.filter(x=>x.t===1).length;
+    msg=`Cesta sugerida para hoje: ${pl} somam ${BRL.format(P.bs)}${P.bs>=P.dayGoal?', cobrindo a meta do dia de '+BRL.format(P.dayGoal):', ainda abaixo da meta do dia de '+BRL.format(P.dayGoal)}. ${ready} já ${ready===1?'está finalizada':'estão finalizadas'} e só ${ready===1?'precisa':'precisam'} de nota; as outras dependem de concluir o serviço.`;
+    msg+= c3>=M? ` Para fechar o mês, seria preciso faturar as ${P.cut+1} primeiras da fila (${BRL.format(P.list[P.cut].acc)}).` : ` Atenção: mesmo faturando todas as pendentes o mês fecha em ${p(c3)} da meta. Para chegar lá é preciso entrar mais OS.`;
+  }
+  const cls=G.batida||(!P.list.length)?'ok':(c3<M?'bad':'warn');
+  return `<section class="card plan" id="planCard">
+    <div class="card-h"><h2>Plano de faturamento<small>Quais OS sem faturar do mês atacar primeiro, da mais pronta para a mais distante</small></h2></div>
+    <div class="pmap"><div class="pmap-bar"><i class="s0" style="width:${w(base)}"></i><i class="s1" style="width:${w(P.tot[1])}"></i><i class="s2" style="width:${w(P.tot[2])}"></i><i class="s3" style="width:${w(P.tot[3])}"></i></div>
+      <div class="pmap-meta ${mp>88?'r':''}" style="left:${mp}%"><span>meta ${BRL.format(M)}</span></div></div>
+    <div class="pleg"><span><b style="background:var(--ink)"></b>Já faturado ${BRL.format(base)} (${p(base)})</span><span><b style="background:#2FA566"></b>Prontas</span><span><b style="background:#E8B923"></b>Em execução</span><span><b style="background:#C3CED7"></b>Dependem do cliente</span></div>
+    <div class="tiers">${tierCard(1,'1 · Prontas para faturar','finalizadas')}${tierCard(2,'2 · Em execução','autorizadas ou aguardando peças')}${tierCard(3,'3 · Dependem do cliente','orçamento ou aprovação')}</div>
+    <div class="gband ${cls}" role="status"><p>${msg}</p></div>
+    <div class="pl-list">${rows||''}</div>
+    <p class="note">${P.old.length?`Fora do mês: ${P.old.length} OS de meses anteriores sem faturar (${BRL.format(P.oldSum)}) não entram na meta deste mês, mas valem caixa. `:''}${P.semValor?`${P.semValor} OS do mês estão sem valor preenchido e ficam fora desta conta. `:''}A fila ordena prioridade pela etapa da OS, não prevê quando o cliente paga. Só se fatura o que foi executado e entregue: o plano ajuda a não esquecer OS prontas, e não serve para antecipar nota.</p>
+  </section>`;
+}
+
 /* ============ META DO MÊS (PITSTOP) ============ */
 S.goal={valor:500000,sab:false};
 try{ const g=JSON.parse(localStorage.getItem('tabc_goal')||'null'); if(g&&g.valor>0) S.goal={valor:+g.valor,sab:!!g.sab}; }catch(e){}
@@ -1255,7 +1343,7 @@ function buildPrint(){
 window.addEventListener('beforeprint',buildPrint);
 
 /* ============ NAVEGAÇÃO ============ */
-function viewSaude(){ return `${demoNote()}${goalCard()}`; }
+function viewSaude(){ return `${demoNote()}${goalCard()}${planCard()}`; }
 const VIEWS={resumo:viewResumo,saude:viewSaude,etapas:viewEtapas,fatura:viewFatura,valet:viewValet,visitas:viewVisitas,recompra:viewRecompra};
 function render(){
   $('#tabs').innerHTML=TABS.map(([k,n])=>`<button class="tab" role="tab" data-act="tab" data-v="${k}" aria-selected="${S.tab===k}">${n}</button>`).join('');
