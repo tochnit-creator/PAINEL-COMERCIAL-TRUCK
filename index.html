@@ -719,7 +719,7 @@ let NOW = new Date();
 let CH = [];      // chegadas normalizadas (do modo atual)
 let CLI = [];     // clientes normalizados
 let LIVE = null;  // dados lidos da planilha online
-const TABS = [['resumo','Resumo'],['etapas','Tempo por etapa'],['fatura','Faturamento'],['valet','Valetamento'],['visitas','Visitas do mês'],['recompra','Recompra']];
+const TABS = [['resumo','Resumo'],['saude','Saúde Pitstop'],['etapas','Tempo por etapa'],['fatura','Faturamento'],['valet','Valetamento'],['visitas','Visitas do mês'],['recompra','Recompra']];
 
 function loadModel(){
   NOW = new Date();
@@ -793,7 +793,6 @@ function viewResumo(){
   if(!chips.length) chips.push('<span class="chip green">Tudo em dia</span>');
   return `${demoNote()}${filtersBar(true)}
   <section class="hero slim"><h1>Atenção agora</h1><div class="chips">${chips.join('')}</div><div class="hero-act"><button class="chip ghost" data-act="printRep">Imprimir relatório</button><button class="chip ghost" data-act="sendResumo">Resumo no WhatsApp</button></div></section>
-  ${goalCard()}
   <div class="grid kpis">
     ${kpi('OS no período',NF.format(list.length),`${fin.length} finalizadas · ${abertas.length} em andamento`)}
     ${kpi('Ciclo médio',fmtH(cycAvg),'Da entrada até finalizado')}
@@ -1256,7 +1255,8 @@ function buildPrint(){
 window.addEventListener('beforeprint',buildPrint);
 
 /* ============ NAVEGAÇÃO ============ */
-const VIEWS={resumo:viewResumo,etapas:viewEtapas,fatura:viewFatura,valet:viewValet,visitas:viewVisitas,recompra:viewRecompra};
+function viewSaude(){ return `${demoNote()}${goalCard()}`; }
+const VIEWS={resumo:viewResumo,saude:viewSaude,etapas:viewEtapas,fatura:viewFatura,valet:viewValet,visitas:viewVisitas,recompra:viewRecompra};
 function render(){
   $('#tabs').innerHTML=TABS.map(([k,n])=>`<button class="tab" role="tab" data-act="tab" data-v="${k}" aria-selected="${S.tab===k}">${n}</button>`).join('');
   const y=window.scrollY;
@@ -1282,7 +1282,7 @@ document.addEventListener('click',e=>{
   const b=e.target.closest('[data-act]'); if(!b) return;
   const a=b.dataset.act, v=b.dataset.v;
   if(a==='gotoRec'){ S.recompra=v; S.shown.rec=40; S.sortDir=null; S.q=''; return setTab('recompra'); }
-  if(a==='goalScroll'){ const el=$('#goalCard'); if(el) el.scrollIntoView({behavior:'smooth',block:'center'}); return; }
+  if(a==='goalScroll') return setTab('saude');
   if(a==='printRep'){ buildPrint(); window.print(); return; }
   if(a==='copyResumo'){ const t=buildResumo(); const done=()=>{b.textContent='Copiado!'; setTimeout(()=>{b.textContent='Copiar resumo'},1600)}; try{ navigator.clipboard.writeText(t).then(done,()=>fallbackCopy(t,done)); }catch(err){ fallbackCopy(t,done); } return; }
   if(a==='sendResumo'){ window.open('https://wa.me/'+WA_RESUMO+'?text='+encodeURIComponent(buildResumo()),'_blank','noopener'); return; }
