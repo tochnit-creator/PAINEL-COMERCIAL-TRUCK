@@ -339,6 +339,39 @@ main.enter .cols .d i{animation:rise .6s ease both}
 .dist button:first-child{border-radius:4px 0 0 4px}.dist button:last-child{border-radius:0 4px 4px 0}
 .os,.stage,.rowbar,.rank{border-radius:10px}
 .switch .trk{border-radius:6px}.switch .trk::after{border-radius:4px}
+
+/* v5: metas, tabela por responsável, WhatsApp, atualização */
+.hero .chips.act{margin-top:2px}
+.chip.ghost{background:rgba(255,255,255,.1);color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.22)}
+.chip.ghost:hover{background:rgba(255,255,255,.18)}
+.wa{display:inline-flex;align-items:center;background:#E3F4EA;color:#14653A;border-radius:7px;padding:4px 10px;font:700 11.5px var(--f-body);text-decoration:none;transition:background .15s,color .15s}
+.wa:hover{background:#2FA566;color:#fff}
+.wa:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+.upd{grid-column:1 / -1;justify-self:end;color:#8794A0;font:500 11.5px var(--f-body);margin-top:-4px}
+.mrow{display:grid;grid-template-columns:minmax(150px,1.3fr) repeat(3,minmax(90px,1fr));gap:8px 16px;align-items:center;padding:10px 12px;border-radius:10px}
+.mrow:hover{background:var(--card-2)}
+.mrow .nm{font-weight:600}
+.mrow .nm small{display:block;color:var(--muted);font-size:12.5px;font-weight:400}
+.mv{display:flex;flex-direction:column;gap:2px;min-width:0}
+.mv small,.mv label{font:600 11px var(--f-body);letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.mv b{font:700 20px/1.1 var(--f-display);letter-spacing:.02em}
+.mi{width:100%;max-width:110px;background:var(--card-2);border:1.5px solid var(--line);padding:7px 10px;border-radius:10px;font:600 15px var(--f-body)}
+.mi:focus-visible{outline:none;border-color:var(--red);box-shadow:0 0 0 4px rgba(208,20,27,.14)}
+.note{margin:10px 4px 0;color:var(--muted);font-size:13px}
+.seg-act{display:flex;gap:8px;flex-wrap:wrap}
+.more.ghostb{background:var(--ice);color:var(--ink)}
+.more.ghostb:hover{background:var(--ice-2);color:var(--ink);box-shadow:none}
+.tw{overflow-x:auto;margin:0 -6px;padding:0 6px}
+.tbl{width:100%;border-collapse:collapse;min-width:640px}
+.tbl th{font:600 11px var(--f-body);letter-spacing:.07em;text-transform:uppercase;color:var(--muted);text-align:right;padding:8px 10px;white-space:nowrap}
+.tbl th:first-child,.tbl td:first-child{text-align:left}
+.tbl td{padding:10px;text-align:right;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
+.tbl td:first-child{font-weight:600;white-space:nowrap}
+.tbl td b{font:700 17px var(--f-display);letter-spacing:.02em}
+.tbl td.w b{color:var(--red)}
+.tbl td i{display:block;height:3px;border-radius:2px;background:var(--ice-2);margin-top:5px;margin-left:auto}
+.tbl td.w i{background:var(--red)}
+@media(max-width:720px){.mrow{grid-template-columns:1fr 1fr}.mrow .nm{grid-column:1/-1}.upd{justify-self:start}}
 </style>
 
 </head>
@@ -370,6 +403,7 @@ main.enter .cols .d i{animation:rise .6s ease both}
         <button class="pillbtn g" id="lockBtn" type="button">Sair</button>
       </div>
       <nav class="tabs" role="tablist" id="tabs"></nav>
+      <div class="upd" id="upd"></div>
     </div>
   </header>
   <main id="main"></main>
@@ -544,23 +578,22 @@ function liveError(e){
   return 'Não consegui ler a planilha publicada. Confira a internet e se o link continua publicado, depois clique em "Atualizar planilha".';
 }
 let loadingLive=false;
-async function refreshLive(){
+async function refreshLive(auto){
   if(loadingLive) return;
-  loadingLive=true; const b=$('#liveBtn'); b.disabled=true; $('#liveTxt').textContent='Atualizando...';
+  const firstLoad=!LIVE; loadingLive=true; setUpd(); const b=$('#liveBtn'); b.disabled=true; $('#liveTxt').textContent='Atualizando...';
   try{
     const [cl,ch]=await Promise.all([getTSV(URL_CLIENTES),getTSV(URL_CHEGADA)]);
     if(!cl.length||String(cl[0][0]).trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')!=='codigo'){ const e=new Error('abas'); e.code='abas'; throw e; }
     const clientes=cl.slice(1).filter(r=>String(r[0]).trim()!=='').map(r=>[Number(r[0]),String(r[1]||''),String(r[5]||''),String(r[4]||''),String(r[7]||'')]);
     const chegada=ch.slice(1).map(r=>{ const o=r.slice(0,16); while(o.length<16) o.push(''); return o; }).filter(o=>o.some(x=>String(x).trim()!==''));
     LIVE={clientes,chegada,at:new Date()};
-    S.demo=false; $('#demoSw').checked=false;
-    S.month='all'; S.local='all'; S.openOs=null;
-    S.liveMsg={kind:'ok',text:'Dados atualizados da planilha: '+NF.format(chegada.length)+' registros de chegada e '+NF.format(clientes.length)+' clientes.'};
+    if(!auto||firstLoad){ S.demo=false; $('#demoSw').checked=false; S.month='all'; S.local='all'; S.openOs=null; }
+    S.liveMsg=(auto&&!firstLoad)?null:{kind:'ok',text:'Dados atualizados da planilha: '+NF.format(chegada.length)+' registros de chegada e '+NF.format(clientes.length)+' clientes.'};
     loadModel(); render();
   }catch(e){
     S.liveMsg={kind:'err',text:liveError(e)}; render();
   }finally{
-    loadingLive=false; b.disabled=false; $('#liveTxt').textContent='Atualizar planilha';
+    loadingLive=false; b.disabled=false; $('#liveTxt').textContent='Atualizar planilha'; setUpd();
   }
 }
 let unlocked=false;
@@ -570,7 +603,7 @@ function tryAuto(){ refreshLive(); }
 const S = {
   tab:'resumo', month:'all', local:'all', demo:true,
   thr:{alerta:30, proximo:60, vencido:90}, freq:{min:3, dias:90},
-  anim:true, recompra:'vencidos', sortDir:null, q:'', qOs:'', shown:{os:12, rec:40}
+  anim:true, meta:[null,null,null,null,null,null], recompra:'vencidos', sortDir:null, q:'', qOs:'', shown:{os:12, rec:40}
 };
 let NOW = new Date();
 let CH = [];      // chegadas normalizadas (do modo atual)
@@ -640,14 +673,15 @@ function viewResumo(){
   const cyc=fin.filter(o=>o.cycle!=null);
   const cycAvg=cyc.length? cyc.reduce((t,o)=>t+o.cycle,0)/cyc.length : null;
   const rc=recompraCounts();
-  const lateN=abertas.filter(o=>{const r=agg[o.last]?.avg;return r!=null&&o.openMs>r*1.5&&o.openMs>3600000}).length;
+  const lateN=abertas.filter(o=>isLate(o,agg)).length, esf=esfriando().length;
   const chips=[];
-  if(lateN) chips.push(`<button class="chip red" data-act="goto" data-v="etapas"><span class="bell"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></span>${lateN} OS acima do normal</button>`);
-  if(rc.vencidos) chips.push(`<button class="chip yellow" data-act="goto" data-v="recompra"><span class="dot red"></span>${NF.format(rc.vencidos)} clientes passaram de ${S.thr.vencido} dias</button>`);
+  if(lateN) chips.push(`<button class="chip red" data-act="goto" data-v="etapas"><span class="bell"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></span>${lateN} OS ${S.meta.some(x=>x>0)?'acima da meta':'acima do normal'}</button>`);
+  if(rc.vencidos) chips.push(`<button class="chip yellow" data-act="gotoRec" data-v="vencidos"><span class="dot red"></span>${NF.format(rc.vencidos)} clientes passaram de ${S.thr.vencido} dias</button>`);
+  if(esf) chips.push(`<button class="chip white" data-act="gotoRec" data-v="esfria"><span class="dot yellow"></span>${esf} clientes esfriando</button>`);
   if(nfat.length) chips.push(`<button class="chip white" data-act="goto" data-v="fatura"><span class="dot yellow"></span>${nfat.length} OS sem faturar · ${BRL.format(sum(nfat))}</button>`);
   if(!chips.length) chips.push('<span class="chip green">Tudo em dia</span>');
   return `${demoNote()}${filtersBar(true)}
-  <section class="hero"><div><small>Truck Center ABC · comercial</small><h1>Atenção agora</h1></div><div class="chips">${chips.join('')}</div></section>
+  <section class="hero"><div><small>Truck Center ABC · comercial</small><h1>Atenção agora</h1></div><div class="chips">${chips.join('')}</div><div class="chips act"><button class="chip ghost" data-act="copyResumo">Copiar resumo</button><button class="chip green" data-act="sendResumo">Enviar resumo no WhatsApp</button></div></section>
   <div class="grid kpis">
     ${kpi('OS no período',NF.format(list.length),`${fin.length} finalizadas · ${abertas.length} em andamento`)}
     ${kpi('Ciclo médio',fmtH(cycAvg),'Da entrada até finalizado')}
@@ -675,10 +709,10 @@ function waitingNow(abertas,agg){
   const rows=abertas.slice().sort((a,b)=>b.openMs-a.openMs).slice(0,8);
   return rows.map(o=>{
     const ref=agg[o.last]?.avg;
-    const late=ref!=null && o.openMs>ref*1.5 && o.openMs>3600000;
+    const late=isLate(o,agg), mm=metaMs(o.last);
     return `<div class="rowbar ${late?'late':''}" style="grid-template-columns:minmax(0,1fr) auto">
-      <div class="nm"><b>${esc(o.placa||'—')}</b> ${late?'<span class="pill red" style="margin-left:6px"><span class="dot"></span>Acima do normal</span>':''}<span>${esc(o.cliente||'Sem cliente')} · parado em ${STAGES[o.last].toLowerCase()}</span></div>
-      <div class="v num">${fmtH(o.openMs)}<small>${ref!=null?'média '+fmtH(ref):'sem média'}</small></div></div>`;
+      <div class="nm"><b>${esc(o.placa||'—')}</b> ${late?'<span class="pill red" style="margin-left:6px"><span class="dot"></span>'+(mm!=null?'Acima da meta':'Acima do normal')+'</span>':''}<span>${esc(o.cliente||'Sem cliente')} · parado em ${STAGES[o.last].toLowerCase()}</span></div>
+      <div class="v num">${fmtH(o.openMs)}<small>${mm!=null?'meta '+fmtH(mm):ref!=null?'média '+fmtH(ref):'sem média'}</small></div></div>`;
   }).join('');
 }
 function stageBars(agg){
@@ -707,6 +741,7 @@ function viewEtapas(){
   <section class="card"><div class="card-h"><h2>Média de espera por etapa<small>Cada barra é a fatia do tempo total médio que a OS passa naquela etapa</small></h2>
     <div class="kpi" style="padding:8px 12px"><span class="l">Ciclo médio completo</span><span class="v num" style="font-size:28px">${fmtH(cycAvg)}</span></div></div>
     ${stageBars(agg)}</section>
+  ${metaCard(list,agg)}${respCard(list)}
   <section class="card"><div class="card-h"><h2>Cada OS, etapa por etapa<small>Toque numa OS para ver quanto tempo ficou em cada setor e o percentual</small></h2></div>
     <div class="legend">${STEPS.map((s,i)=>`<span><b style="background:${SC[i]}"></b>${s.n.split(' até ')[0]}</span>`).join('')}<span><b style="background:repeating-linear-gradient(135deg,var(--red) 0 3px,#F0A3A6 3px 6px)"></b>Parada agora</span></div>
     <div class="toolbar"><input class="search" id="qOs" type="search" placeholder="Buscar placa, cliente ou OS" value="${esc(S.qOs)}" aria-label="Buscar OS"><span style="color:var(--muted);font-size:13px">${NF.format(rows.length)} OS</span></div>
@@ -848,18 +883,25 @@ function frequentes(){
 }
 function viewRecompra(){
   const rc=recompraCounts(), t=S.thr, total=CLI.length;
-  const tabs=[['vencidos','Passaram de '+t.vencido+' dias','red',rc.vencidos,'var(--red)'],['proximos',t.proximo+' a '+t.vencido+' dias','amber',rc.proximos,'var(--amber)'],['alerta','Alerta '+t.alerta+' dias','blue',rc.alerta,'var(--blue)'],['nunca','Nunca compraram','grey',rc.nunca,'var(--s3)'],['freq','Frequentes','green',frequentes().length,'var(--green)']];
+  const tabs=[['vencidos','Passaram de '+t.vencido+' dias','red',rc.vencidos,'var(--red)'],['proximos',t.proximo+' a '+t.vencido+' dias','amber',rc.proximos,'var(--amber)'],['alerta','Alerta '+t.alerta+' dias','blue',rc.alerta,'var(--blue)'],['nunca','Nunca compraram','grey',rc.nunca,'var(--s3)'],['esfria','Esfriando','amber',esfriando().length,'var(--amber)'],['freq','Frequentes','green',frequentes().length,'var(--green)']];
   const seg=[['vencidos',rc.vencidos,'var(--red)'],['proximos',rc.proximos,'var(--amber)'],['alerta',rc.alerta,'var(--blue)'],['ok',rc.ok,'var(--green)'],['nunca',rc.nunca,'var(--s3)']];
   const names={vencidos:'Passaram de '+t.vencido+' dias',proximos:t.proximo+' a '+t.vencido+' dias',alerta:'Alerta '+t.alerta+' dias',ok:'Compraram há menos de '+t.alerta+' dias',nunca:'Nunca compraram'};
   const q=norm(S.q);
   let body='';
   const cur=S.recompra;
-  if(cur==='freq'){
+  if(cur==='esfria'){
+    const f=esfriando().filter(e=>!q||norm(e.nome).includes(q));
+    body=`<div class="empty" style="margin-bottom:8px">Clientes que vinham com frequência (3 ou mais entradas) e estão sem aparecer há mais de 1,5× o intervalo normal deles.</div>
+    <div>${f.length? f.slice(0,S.shown.rec).map((e,i)=>`<div class="rank"><span class="n">${i+1}</span>
+      <div class="nm"><b>${esc(e.nome)}</b><span>vinha a cada ~${e.avg} dias · ${e.n} entradas${e.c&&e.c.cidade?' · '+esc(e.c.cidade):''}</span></div>
+      <div class="ph">${e.c&&e.c.tel&&e.c.tel!=='0'?`<span class="num">${esc(e.c.tel)}</span><button class="cp" data-act="copy" data-v="${esc(e.c.tel)}">Copiar</button>${waBtn(e.c.tel,e.nome,e.since,'esfria')}`:'<span style="color:var(--muted)">Sem telefone</span>'}</div>
+      <div class="dd"><span class="pill amber">${e.since} dias</span><small>${e.ratio.toFixed(1).replace('.',',')}× o normal</small></div></div>`).join('') : empty('Nenhum cliente esfriando agora. Para aparecer aqui, o cliente precisa ter 3 ou mais entradas registradas na aba de chegada.')}</div>`;
+  } else if(cur==='freq'){
     const f=frequentes().filter(e=>!q||norm(e.nome).includes(q));
     body=`<div class="thr"><div class="field"><label for="thF">Mínimo de entradas</label><input id="thF" type="number" min="1" value="${S.freq.min}"></div><div class="field"><label for="thD">Nos últimos (dias)</label><input id="thD" type="number" min="7" value="${S.freq.dias}"></div></div>
     <div>${f.length? f.slice(0,S.shown.rec).map((e,i)=>`<div class="rank"><span class="n">${i+1}</span>
       <div class="nm"><b>${esc(e.nome)}</b><span>${e.c&&e.c.cidade?esc(e.c.cidade)+' · ':''}última entrada ${fmtDate(e.ult)} · ${BRL.format(e.v)}</span></div>
-      <div class="ph">${e.c&&e.c.tel?`<span class="num">${esc(e.c.tel)}</span><button class="cp" data-act="copy" data-v="${esc(e.c.tel)}">Copiar</button>`:'<span style="color:var(--muted)">Sem telefone</span>'}</div>
+      <div class="ph">${e.c&&e.c.tel?`<span class="num">${esc(e.c.tel)}</span><button class="cp" data-act="copy" data-v="${esc(e.c.tel)}">Copiar</button>${waBtn(e.c.tel,e.nome,null,'freq')}`:'<span style="color:var(--muted)">Sem telefone</span>'}</div>
       <div class="dd"><span class="pill green">${e.n} entradas</span><small>últimos ${S.freq.dias} dias</small></div></div>`).join('') : empty('Nenhum cliente com '+S.freq.min+' ou mais entradas nos últimos '+S.freq.dias+' dias. Ajuste os números acima ou ligue a Demonstração para ver como fica.')}</div>`;
   } else {
     let rows=CLI.filter(c=>catOf(c)===cur);
@@ -875,7 +917,7 @@ function viewRecompra(){
       <span style="color:var(--muted);font-size:13px">${NF.format(rows.length)} clientes</span></div>
     <div>${rows.length? rows.slice(0,S.shown.rec).map((c,i)=>`<div class="rank"><span class="n">${i+1}</span>
       <div class="nm"><b>${esc(c.nome)}</b><span>${esc(c.cidade||'—')} · código ${c.cod}</span></div>
-      <div class="ph">${c.tel&&c.tel!=='0'?`<span class="num">${esc(c.tel)}</span><button class="cp" data-act="copy" data-v="${esc(c.tel)}">Copiar</button>`:'<span style="color:var(--muted)">Sem telefone</span>'}</div>
+      <div class="ph">${c.tel&&c.tel!=='0'?`<span class="num">${esc(c.tel)}</span><button class="cp" data-act="copy" data-v="${esc(c.tel)}">Copiar</button>${waBtn(c.tel,c.nome,c.dias,cur)}`:'<span style="color:var(--muted)">Sem telefone</span>'}</div>
       <div class="dd">${c.ult?`<span class="pill ${pillCls||'grey'}">${NF.format(c.dias)} dias</span><small>${fmtDate(c.ult)}</small>`:'<span class="pill grey">Sem compra</span>'}</div></div>`).join('') : empty('Nenhum cliente nesta lista.')}</div>
     ${rows.length>S.shown.rec?`<button class="more" data-act="moreRec">Ver mais ${Math.min(40,rows.length-S.shown.rec)}</button>`:''}`;
   }
@@ -887,12 +929,127 @@ function viewRecompra(){
   <section class="card"><div class="seg" role="tablist" aria-label="Listas de recompra" style="align-self:flex-start">${tabs.map(([k,n,cl,c])=>`<button data-act="rec" data-v="${k}" aria-pressed="${cur===k}">${n} · ${NF.format(c)}</button>`).join('')}</div>${body}</section>`;
 }
 
+
+/* ============ METAS, WHATSAPP, RESUMO ============ */
+const WA_RESUMO='5511930233910';   // WhatsApp que recebe o resumo (formato 55 + DDD + número)
+const MIN=3600000;
+try{ const m=JSON.parse(localStorage.getItem('tabc_meta')||'null'); if(Array.isArray(m)&&m.length===6) S.meta=m.map(x=>x>0?+x:null); }catch(e){}
+function saveMeta(){ try{ localStorage.setItem('tabc_meta',JSON.stringify(S.meta)); }catch(e){} }
+function metaMs(i){ const m=S.meta[i]; return m>0? m*MIN : null; }
+function isLate(o,agg){
+  if(!o.open) return false;
+  const m=metaMs(o.last);
+  if(m!=null) return o.openMs>m;
+  const a=agg[o.last]?.avg;
+  return a!=null && o.openMs>a*1.5 && o.openMs>MIN;
+}
+const titleCase=s=>String(s||'').toLowerCase().replace(/(^|\s)([a-zà-ú])/g,(m,a,b)=>a+b.toUpperCase());
+function waLink(tel,text){
+  let d=String(tel||'').replace(/\D/g,'');
+  if(d.startsWith('55')&&d.length>=12) d=d.slice(2);
+  const ok=(d.length===11&&d[2]==='9')||(d.length===10&&'6789'.includes(d[2]));
+  return ok? 'https://wa.me/55'+d+'?text='+encodeURIComponent(text) : '';
+}
+function waBtn(tel,nome,dias,cat){
+  const n=titleCase(nome);
+  const t = cat==='nunca'
+    ? `Olá! Aqui é da Truck Center ABC. Gostaríamos de apresentar nossos serviços de manutenção para a frota da ${n}. Posso te ajudar?`
+    : (dias!=null&&dias>0
+        ? `Olá! Aqui é da Truck Center ABC. Já faz ${dias} dias desde a última visita da ${n} e queremos ajudar a manter a frota rodando. Podemos agendar uma revisão?`
+        : `Olá! Aqui é da Truck Center ABC. Sentimos sua falta! Podemos ajudar a ${n} com a manutenção da frota?`);
+  const l=waLink(tel,t);
+  return l? `<a class="wa" href="${l}" target="_blank" rel="noopener">WhatsApp</a>` : '';
+}
+function esfriando(){
+  const g=new Map();
+  for(const o of CH){
+    const k=norm(o.cliente); if(!k||!o.base) continue;
+    const e=g.get(k)||{nome:o.cliente,days:new Set()};
+    e.days.add(new Date(o.base.getFullYear(),o.base.getMonth(),o.base.getDate()).getTime()); g.set(k,e);
+  }
+  const byName=new Map(CLI.map(c=>[c.k,c])), out=[];
+  for(const [k,e] of g){
+    const d=[...e.days].sort((a,b)=>a-b); if(d.length<3) continue;
+    const avg=(d[d.length-1]-d[0])/(d.length-1)/DAY, since=(NOW-d[d.length-1])/DAY;
+    if(avg>0 && since>avg*1.5 && since>=14) out.push({nome:e.nome,n:d.length,avg:Math.max(1,Math.round(avg)),since:Math.floor(since),ratio:since/avg,c:byName.get(k)});
+  }
+  return out.sort((a,b)=>b.ratio-a.ratio);
+}
+function buildResumo(){
+  const list=osFiltered(), fin=list.filter(o=>!o.open), ab=list.filter(o=>o.open);
+  const fat=list.filter(o=>o.fat), nf=list.filter(o=>!o.fat);
+  const sum=a=>a.reduce((t,o)=>t+o.valor,0), agg=stageAgg(list);
+  const cyc=fin.filter(o=>o.cycle!=null), cA=cyc.length? cyc.reduce((t,o)=>t+o.cycle,0)/cyc.length : null;
+  const maxI=agg.reduce((b,x,i)=>x.avg!=null&&(b<0||x.avg>agg[b].avg)?i:b,-1);
+  const late=ab.filter(o=>isLate(o,agg)).sort((a,b)=>b.openMs-a.openMs);
+  const rc=recompraCounts(), w7=list.filter(o=>NOW-o.base<=7*DAY).length, esf=esfriando().length;
+  const un=S.local==='all'?'':' · unidade '+((CH.find(o=>norm(o.local)===S.local)||{}).local||S.local);
+  const L=['*Resumo comercial · Truck Center ABC*', fmtDT(NOW)+(S.demo?' (dados de demonstração)':''),
+    'Período: '+(S.month==='all'?'todos os meses':monthLabel(S.month))+un, '',
+    `OS no período: ${NF.format(list.length)} (${fin.length} finalizadas, ${ab.length} em andamento) · últimos 7 dias: ${w7}`,
+    'Ciclo médio: '+fmtH(cA),
+    `Faturado: ${BRL.format(sum(fat))} (${fat.length} OS)`,
+    `Ainda não faturado: ${BRL.format(sum(nf))} (${nf.length} OS)`];
+  if(maxI>=0) L.push(`Maior espera: ${STEPS[maxI].n} (média ${fmtH(agg[maxI].avg)})`);
+  L.push('', `OS paradas acima ${S.meta.some(x=>x>0)?'da meta':'do normal'}: ${late.length}`);
+  late.slice(0,3).forEach(o=>L.push(`- ${o.placa||'sem placa'} (${titleCase(o.cliente)||'sem cliente'}): ${fmtH(o.openMs)} em ${STAGES[o.last].toLowerCase()}`));
+  L.push('', `Recompra: ${NF.format(rc.vencidos)} clientes passaram de ${S.thr.vencido} dias · ${NF.format(rc.proximos)} perto de vencer · ${NF.format(rc.nunca)} nunca compraram`, `Clientes esfriando: ${esf}`);
+  return L.join('\n');
+}
+function metaCard(list,agg){
+  const rows=STEPS.map((s,i)=>{
+    const a=agg[i], m=metaMs(i);
+    const steps=list.flatMap(o=>o.steps.filter(x=>x.from===i)), open=list.filter(o=>o.open&&o.last===i);
+    let ok=0,over=0; if(m!=null){ ok=steps.filter(x=>x.ms<=m).length; over=steps.length-ok+open.filter(o=>o.openMs>m).length; }
+    const p=m!=null&&steps.length? pct(ok,steps.length):null;
+    return `<div class="mrow"><div class="nm">${s.n}<small>${s.sub}</small></div>
+      <div class="mv"><small>Média atual</small><b class="num">${a.avg!=null?fmtH(a.avg):'—'}</b><small>${a.n} OS</small></div>
+      <div class="mv"><label for="mt${i}">Meta (horas)</label><input id="mt${i}" class="mi" type="text" inputmode="decimal" placeholder="ex: 4" value="${S.meta[i]!=null?String(S.meta[i]).replace('.',','):''}"></div>
+      <div class="mv"><small>Dentro da meta</small><b class="num">${p!=null?p+'%':'—'}</b><small>${m!=null?over+' estouraram':'defina uma meta'}</small></div></div>`;
+  }).join('');
+  return `<section class="card"><div class="card-h"><h2>Meta de tempo por etapa<small>A média atual mostra quanto tempo a OS leva hoje em cada etapa. Use como referência para definir a meta de cada uma.</small></h2>
+    <div class="seg-act"><button class="more" data-act="metaAvg">Sugerir: média + 20%</button><button class="more ghostb" data-act="metaClear">Limpar metas</button></div></div>
+    ${rows}<p class="note">Com meta definida, as OS paradas além do prazo ficam em vermelho e entram no alerta do Resumo. Sem meta, o alerta usa 1,5× a média. As metas ficam salvas neste navegador.</p></section>`;
+}
+function respCard(list){
+  const g=new Map();
+  for(const o of list){
+    const k=o.resp||'Sem responsável';
+    const e=g.get(k)||{n:0,st:STEPS.map(()=>({s:0,n:0})),cy:[]};
+    e.n++; for(const s of o.steps){ e.st[s.from].s+=s.ms; e.st[s.from].n++; }
+    if(o.cycle!=null) e.cy.push(o.cycle); g.set(k,e);
+  }
+  const rows=[...g.entries()].map(([k,e])=>({k,n:e.n,av:e.st.map(x=>x.n?x.s/x.n:null),cy:e.cy.length? e.cy.reduce((a,b)=>a+b,0)/e.cy.length:null})).sort((a,b)=>b.n-a.n);
+  if(!rows.length) return '';
+  const cols=['Entrada → Valet.','Valet. → Orçam.','Orçam. → Aprov.','Aprov. → Autor.','Autor. → Peças','Peças → Final.'];
+  const mx=cols.map((_,i)=>Math.max(0,...rows.map(r=>r.av[i]||0)));
+  const mxc=Math.max(0,...rows.map(r=>r.cy||0));
+  const cell=(v,m,many)=> v==null? '<td>—</td>' : `<td class="${many&&v===m&&m>0?'w':''}"><b>${fmtH(v)}</b><i style="width:${m>0?Math.max(6,v/m*100):0}%"></i></td>`;
+  return `<section class="card"><div class="card-h"><h2>Tempo médio por responsável<small>Quanto cada responsável leva, em média, em cada etapa. Em vermelho, o mais lento de cada coluna.</small></h2></div>
+    <div class="tw"><table class="tbl"><thead><tr><th>Responsável</th><th>OS</th>${cols.map(c=>`<th>${c}</th>`).join('')}<th>Ciclo</th></tr></thead><tbody>
+    ${rows.map(r=>`<tr><td>${esc(r.k)}</td><td>${r.n}</td>${r.av.map((v,i)=>cell(v,mx[i],rows.length>1)).join('')}${cell(r.cy,mxc,rows.length>1)}</tr>`).join('')}
+    </tbody></table></div></section>`;
+}
+function updText(){
+  if(loadingLive) return 'Atualizando…';
+  if(LIVE) return 'Atualizado em '+fmtDT(LIVE.at)+' · atualiza sozinho a cada 10 min';
+  return (typeof SNAP_AT!=='undefined'? 'Cópia da planilha de '+SNAP_AT : 'Carregando a planilha…');
+}
+function setUpd(){ const u=$('#upd'); if(u) u.textContent=updText(); }
+let autoTimer=null;
+function startAutoRefresh(){
+  if(autoTimer) return;
+  autoTimer=setInterval(()=>{ if(unlocked&&!document.hidden) refreshLive(true); },600000);
+  document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&unlocked&&LIVE&&Date.now()-LIVE.at>600000) refreshLive(true); });
+}
+
 /* ============ NAVEGAÇÃO ============ */
 const VIEWS={resumo:viewResumo,etapas:viewEtapas,fatura:viewFatura,valet:viewValet,visitas:viewVisitas,recompra:viewRecompra};
 function render(){
   $('#tabs').innerHTML=TABS.map(([k,n])=>`<button class="tab" role="tab" data-act="tab" data-v="${k}" aria-selected="${S.tab===k}">${n}</button>`).join('');
   const y=window.scrollY;
   const act=document.activeElement&&document.activeElement.id;
+  setUpd();
   const enter=S.anim; S.anim=false;
   $('#main').className=enter?'enter':'';
   $('#main').innerHTML=liveBar()+VIEWS[S.tab]();
@@ -912,6 +1069,11 @@ function setTab(v){S.anim=true;S.tab=v;S.shown={os:12,rec:40};S.openOs=null;rend
 document.addEventListener('click',e=>{
   const b=e.target.closest('[data-act]'); if(!b) return;
   const a=b.dataset.act, v=b.dataset.v;
+  if(a==='gotoRec'){ S.recompra=v; S.shown.rec=40; S.sortDir=null; S.q=''; return setTab('recompra'); }
+  if(a==='copyResumo'){ const t=buildResumo(); const done=()=>{b.textContent='Copiado!'; setTimeout(()=>{b.textContent='Copiar resumo'},1600)}; try{ navigator.clipboard.writeText(t).then(done,()=>fallbackCopy(t,done)); }catch(err){ fallbackCopy(t,done); } return; }
+  if(a==='sendResumo'){ window.open('https://wa.me/'+WA_RESUMO+'?text='+encodeURIComponent(buildResumo()),'_blank','noopener'); return; }
+  if(a==='metaAvg'){ stageAgg(osFiltered()).forEach((x,i)=>{ if(x.avg!=null) S.meta[i]=Math.max(0.5,Math.ceil(x.avg*1.2/MIN*2)/2); }); saveMeta(); return render(); }
+  if(a==='metaClear'){ S.meta=[null,null,null,null,null,null]; saveMeta(); return render(); }
   if(a==='tab'||a==='goto') return setTab(v);
   if(a==='toggleOs'){ S.openOs=S.openOs===b.dataset.id?null:b.dataset.id; return render(); }
   if(a==='moreOs'){ S.shown.os+=12; return render(); }
@@ -927,7 +1089,8 @@ document.addEventListener('click',e=>{
 function fallbackCopy(t,done){ const ta=document.createElement('textarea'); ta.value=t; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');done()}catch(e){} ta.remove(); }
 document.addEventListener('change',e=>{
   const id=e.target.id;
-  if(id==='fMes'){S.month=e.target.value;S.shown={os:12,rec:40};render();}
+  if(/^mt[0-5]$/.test(id)){ const v=parseFloat(String(e.target.value).replace(',','.')); S.meta[+id[2]]=v>0?v:null; saveMeta(); render(); }
+  else if(id==='fMes'){S.month=e.target.value;S.shown={os:12,rec:40};render();}
   else if(id==='fLocal'){S.local=e.target.value;S.shown={os:12,rec:40};render();}
   else if(id==='thA'||id==='thP'||id==='thV'){
     let a=+$('#thA').value||30,p=+$('#thP').value||60,v=+$('#thV').value||90;
@@ -959,7 +1122,7 @@ function unlock(){
   $('#gate').classList.add('hidden'); $('#app').classList.remove('hidden');
   const h=(location.hash||'').replace('#',''); if(VIEWS[h]) S.tab=h;
   $('#demoSw').checked=S.demo; loadModel(); S.anim=true; render();
-  unlocked=true; S.liveMsg={kind:'ok',text:'Carregando a planilha...'}; render(); tryAuto();
+  unlocked=true; startAutoRefresh(); S.liveMsg={kind:'ok',text:'Carregando a planilha...'}; render(); tryAuto();
 }
 $('#gateForm').addEventListener('submit',e=>{
   e.preventDefault();
