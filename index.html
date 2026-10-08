@@ -372,6 +372,58 @@ main.enter .cols .d i{animation:rise .6s ease both}
 .tbl td i{display:block;height:3px;border-radius:2px;background:var(--ice-2);margin-top:5px;margin-left:auto}
 .tbl td.w i{background:var(--red)}
 @media(max-width:720px){.mrow{grid-template-columns:1fr 1fr}.mrow .nm{grid-column:1/-1}.upd{justify-self:start}}
+
+/* v6: atenção agora compacto + relatório impresso */
+.hero.slim{flex-direction:row;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:12px 16px;border-radius:14px;background:linear-gradient(135deg,#12161A,#222A31)}
+.hero.slim h1{font-size:20px;letter-spacing:.04em;margin:0;white-space:nowrap}
+.hero.slim .chips{gap:8px;flex:1 1 auto}
+.hero.slim .chip{padding:6px 12px;font-size:13px;font-weight:600;gap:7px}
+.hero.slim .chip svg{width:15px;height:15px}
+.hero.slim .chip.red{box-shadow:0 6px 16px -10px rgba(255,59,66,.7)}
+.hero.slim .chip.yellow{box-shadow:none}
+.hero.slim .chip.white{box-shadow:none}
+.hero-act{display:flex;gap:8px;margin-left:auto}
+@media(max-width:720px){.hero.slim{padding:12px 14px}.hero-act{margin-left:0;width:100%}.hero-act .chip{flex:1;justify-content:center}}
+#printRoot{display:none}
+@media print{
+  @page{size:A4;margin:12mm 12mm 14mm}
+  html,body{background:#fff!important}
+  #app,#gate,#tip{display:none!important}
+  #printRoot{display:block;color:#111;font:12px/1.4 'Barlow','Helvetica Neue',Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pr-head{display:flex;align-items:center;gap:18px;background:#0E1114;color:#fff;border-radius:10px;padding:14px 18px;border-bottom:4px solid #D0141B}
+  .pr-head .logo{width:120px;flex:none}
+  .pr-head h1{margin:0;font:700 24px/1 'Barlow Condensed','Arial Narrow',Arial,sans-serif;letter-spacing:.06em;text-transform:uppercase}
+  .pr-head p{margin:5px 0 0;color:#B9C3CB;font-size:11.5px}
+  .pr-demo{margin:10px 0 0;padding:6px 10px;border-radius:6px;background:#FBE3E4;color:#6C0B0F;font-weight:600;font-size:11.5px}
+  .pr-kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:12px 0 4px}
+  .pr-kpis div{border:1px solid #DAE1E8;border-radius:8px;padding:8px 10px;background:#F5F8FA}
+  .pr-kpis small{display:block;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:#5B6772;font-weight:700}
+  .pr-kpis b{display:block;font:700 18px/1.2 'Barlow Condensed','Arial Narrow',Arial,sans-serif;margin-top:2px}
+  .pr-kpis .r{background:#0E1114;color:#fff;border-color:#0E1114}.pr-kpis .r small{color:#B9C3CB}
+  #printRoot h2{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin:18px 0 6px;padding-bottom:5px;border-bottom:2px solid #0E1114;font:700 16px 'Barlow Condensed','Arial Narrow',Arial,sans-serif;letter-spacing:.05em;text-transform:uppercase;break-after:avoid}
+  #printRoot h2 span{font:600 12px 'Barlow',Arial,sans-serif;letter-spacing:0;text-transform:none;color:#444}
+  #printRoot h2 span b{color:#D0141B}
+  .pr-t{width:100%;border-collapse:collapse}
+  .pr-t thead{display:table-header-group}
+  .pr-t th{text-align:left;font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:#5B6772;padding:5px 6px;border-bottom:1px solid #9FB0BE}
+  .pr-t td{padding:5px 6px;border-bottom:1px solid #E3E9EE;vertical-align:top}
+  .pr-t tr{break-inside:avoid}
+  .pr-t tbody tr:nth-child(even) td{background:#F8FAFB}
+  .pr-t .n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .pr-t th.n{text-align:right}
+  .pr-t .pl{font-weight:700;letter-spacing:.04em;white-space:nowrap}
+  .pr-t tfoot td{border-top:2px solid #0E1114;font-weight:700;background:#fff!important}
+  .pr-tag{display:inline-block;border-radius:5px;padding:1px 6px;font-size:10px;font-weight:700;background:#E3E9EE}
+  .pr-tag.r{background:#D0141B;color:#fff}.pr-tag.g{background:#D9EEE2;color:#0F4A29}.pr-tag.a{background:#FBEBD2;color:#6B3A04}
+  .pr-foot{position:fixed;bottom:0;left:0;right:0;text-align:center;font-size:9.5px;color:#7C8791;border-top:1px solid #DAE1E8;padding-top:4px}
+  .pr-empty{color:#7C8791;padding:8px 6px}
+}
+/* v6b: título e botões na 1ª linha, alertas na 2ª */
+.hero.slim{gap:8px 12px;padding:10px 14px}
+.hero.slim h1{order:1}
+.hero.slim .hero-act{order:2;margin-left:auto}
+.hero.slim .chips{order:3;flex:1 1 100%}
+.hero.slim .hero-act .chip{padding:5px 12px;font-size:12.5px}
 </style>
 
 </head>
@@ -409,6 +461,7 @@ main.enter .cols .d i{animation:rise .6s ease both}
   <main id="main"></main>
 </div>
 <div id="tip"></div>
+<div id="printRoot"></div>
 
 <script>
 /* ============ DADOS ============
@@ -681,7 +734,7 @@ function viewResumo(){
   if(nfat.length) chips.push(`<button class="chip white" data-act="goto" data-v="fatura"><span class="dot yellow"></span>${nfat.length} OS sem faturar · ${BRL.format(sum(nfat))}</button>`);
   if(!chips.length) chips.push('<span class="chip green">Tudo em dia</span>');
   return `${demoNote()}${filtersBar(true)}
-  <section class="hero"><div><small>Truck Center ABC · comercial</small><h1>Atenção agora</h1></div><div class="chips">${chips.join('')}</div><div class="chips act"><button class="chip ghost" data-act="copyResumo">Copiar resumo</button><button class="chip green" data-act="sendResumo">Enviar resumo no WhatsApp</button></div></section>
+  <section class="hero slim"><h1>Atenção agora</h1><div class="chips">${chips.join('')}</div><div class="hero-act"><button class="chip ghost" data-act="printRep">Imprimir relatório</button><button class="chip ghost" data-act="sendResumo">Resumo no WhatsApp</button></div></section>
   <div class="grid kpis">
     ${kpi('OS no período',NF.format(list.length),`${fin.length} finalizadas · ${abertas.length} em andamento`)}
     ${kpi('Ciclo médio',fmtH(cycAvg),'Da entrada até finalizado')}
@@ -1043,6 +1096,43 @@ function startAutoRefresh(){
   document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&unlocked&&LIVE&&Date.now()-LIVE.at>600000) refreshLive(true); });
 }
 
+
+/* ============ RELATÓRIO IMPRESSO ============ */
+const BRL2=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
+function buildPrint(){
+  const list=osFiltered(), agg=stageAgg(list);
+  const sum=a=>a.reduce((t,o)=>t+o.valor,0);
+  const fat=list.filter(o=>o.fat).sort((a,b)=>b.valor-a.valor), nf=list.filter(o=>!o.fat).sort((a,b)=>b.valor-a.valor);
+  const ab=list.filter(o=>o.open).sort((a,b)=>b.openMs-a.openMs);
+  const un=S.local==='all'?'todas as unidades':((CH.find(o=>norm(o.local)===S.local)||{}).local||S.local);
+  const per=S.month==='all'?'todos os meses':monthLabel(S.month);
+  const stat=o=>o.open? STAGES[o.last] : 'Finalizado';
+  const tbl=(head,rows,foot)=> rows.length? `<table class="pr-t"><thead><tr>${head}</tr></thead><tbody>${rows.join('')}</tbody><tfoot>${foot}</tfoot></table>` : '<div class="pr-empty">Nenhum registro neste período.</div>';
+  const rNF=nf.map(o=>`<tr><td class="pl">${esc(o.placa||'—')}</td><td>${esc(o.cliente||'Sem cliente')}${o.os?'<br><small>OS '+esc(o.os)+'</small>':''}</td><td>${esc(stat(o))}</td><td>${fmtDate(o.base)}</td><td class="n">${BRL2.format(o.valor)}</td></tr>`);
+  const rF=fat.map(o=>`<tr><td class="pl">${esc(o.placa||'—')}</td><td>${esc(o.cliente||'Sem cliente')}${o.os?'<br><small>OS '+esc(o.os)+'</small>':''}</td><td>${esc(stat(o))}</td><td>${fmtDate(o.base)}</td><td class="n">${BRL2.format(o.valor)}</td></tr>`);
+  const rAB=ab.map(o=>{ const late=isLate(o,agg); return `<tr><td class="pl">${esc(o.placa||'—')}</td><td>${esc(o.cliente||'Sem cliente')}${o.os?'<br><small>OS '+esc(o.os)+'</small>':''}</td><td>${esc(STAGES[o.last])}</td><td>${fmtDT(o.base)}</td><td class="n">${fmtH(o.openMs)}</td><td>${esc(o.resp||'—')}</td><td>${late?'<span class="pr-tag r">Atrasado</span>':'<span class="pr-tag g">No prazo</span>'}</td></tr>`; });
+  const h5='<th>Placa</th><th>Cliente</th><th>Status</th><th>Entrada</th><th class="n">Valor</th>';
+  const f5=(n,t)=>`<tr><td colspan="4">Total · ${n} ${n===1?'carro':'carros'}</td><td class="n">${BRL2.format(t)}</td></tr>`;
+  $('#printRoot').innerHTML=`
+  <div class="pr-head"><span class="logo" role="img" aria-label="Truck Center ABC"></span><div><h1>Relatório comercial</h1><p>Período: ${per} · ${esc(un)} · emitido em ${fmtDT(new Date())}</p></div></div>
+  ${S.demo?'<div class="pr-demo">Atenção: este relatório usa dados de demonstração (fictícios). Desligue "Demonstração" no painel para imprimir só o que está na planilha.</div>':''}
+  <div class="pr-kpis">
+    <div><small>OS no período</small><b>${NF.format(list.length)}</b></div>
+    <div><small>Em andamento</small><b>${ab.length}</b></div>
+    <div><small>Faturado</small><b>${BRL2.format(sum(fat))}</b></div>
+    <div class="r"><small>Sem faturar</small><b>${BRL2.format(sum(nf))}</b></div>
+    <div><small>Ciclo médio</small><b>${fmtH((()=>{const c=list.filter(o=>!o.open&&o.cycle!=null);return c.length?c.reduce((t,o)=>t+o.cycle,0)/c.length:null})())}</b></div>
+  </div>
+  <h2>Carros sem faturar <span><b>${nf.length}</b> · total <b>${BRL2.format(sum(nf))}</b></span></h2>
+  ${tbl(h5,rNF,f5(nf.length,sum(nf)))}
+  <h2>Carros faturados <span><b>${fat.length}</b> · total <b>${BRL2.format(sum(fat))}</b></span></h2>
+  ${tbl(h5,rF,f5(fat.length,sum(fat)))}
+  <h2>Status dos carros em processo <span><b>${ab.length}</b> ${ab.length===1?'carro':'carros'} agora</span></h2>
+  ${tbl('<th>Placa</th><th>Cliente</th><th>Etapa atual</th><th>Entrada</th><th class="n">Parado há</th><th>Responsável</th><th>Prazo</th>',rAB,'<tr><td colspan="7">'+ab.filter(o=>isLate(o,agg)).length+' atrasados · '+(S.meta.some(x=>x>0)?'critério: metas por etapa':'critério: 1,5× a média da etapa')+'</td></tr>')}
+  <div class="pr-foot">Truck Center ABC · Relatório comercial · uso interno</div>`;
+}
+window.addEventListener('beforeprint',buildPrint);
+
 /* ============ NAVEGAÇÃO ============ */
 const VIEWS={resumo:viewResumo,etapas:viewEtapas,fatura:viewFatura,valet:viewValet,visitas:viewVisitas,recompra:viewRecompra};
 function render(){
@@ -1070,6 +1160,7 @@ document.addEventListener('click',e=>{
   const b=e.target.closest('[data-act]'); if(!b) return;
   const a=b.dataset.act, v=b.dataset.v;
   if(a==='gotoRec'){ S.recompra=v; S.shown.rec=40; S.sortDir=null; S.q=''; return setTab('recompra'); }
+  if(a==='printRep'){ buildPrint(); window.print(); return; }
   if(a==='copyResumo'){ const t=buildResumo(); const done=()=>{b.textContent='Copiado!'; setTimeout(()=>{b.textContent='Copiar resumo'},1600)}; try{ navigator.clipboard.writeText(t).then(done,()=>fallbackCopy(t,done)); }catch(err){ fallbackCopy(t,done); } return; }
   if(a==='sendResumo'){ window.open('https://wa.me/'+WA_RESUMO+'?text='+encodeURIComponent(buildResumo()),'_blank','noopener'); return; }
   if(a==='metaAvg'){ stageAgg(osFiltered()).forEach((x,i)=>{ if(x.avg!=null) S.meta[i]=Math.max(0.5,Math.ceil(x.avg*1.2/MIN*2)/2); }); saveMeta(); return render(); }
