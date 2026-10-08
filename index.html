@@ -2,7 +2,7 @@
 <html lang="pt-BR"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Painel Comercial Truck ABC</title>
+<title>Pitstop · Painel Comercial</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600;700&display=swap">
@@ -424,6 +424,63 @@ main.enter .cols .d i{animation:rise .6s ease both}
 .hero.slim .hero-act{order:2;margin-left:auto}
 .hero.slim .chips{order:3;flex:1 1 100%}
 .hero.slim .hero-act .chip{padding:5px 12px;font-size:12.5px}
+
+/* v7: Pitstop + termômetro de meta */
+.brandwrap{display:flex;align-items:center;gap:12px;min-width:0}
+.brandname{display:flex;flex-direction:column;line-height:1;padding-left:12px;border-left:2px solid #2A323A;font:700 21px var(--f-display);letter-spacing:.12em;color:#fff}
+.brandname b{color:var(--red-glow);font-weight:700}
+.brandname small{font:600 10px var(--f-body);letter-spacing:.2em;color:#8794A0;text-transform:uppercase;margin-top:4px}
+@media(max-width:720px){.brandname{font-size:16px;padding-left:9px}.brandname small{display:none}.brandwrap{gap:8px}}
+.dot.green{background:#2FA566}
+.goal{--tc:var(--red)}
+.goal.warn{--tc:#E8B923}
+.goal.ok{--tc:#2FA566}
+.goal-ed{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;font:600 12px var(--f-body);color:var(--muted)}
+.goal-ed label{display:flex;align-items:center;gap:7px}
+.goal-ed input[type=text]{width:112px;background:var(--card-2);border:1.5px solid var(--line);border-radius:10px;padding:6px 10px;font:700 13.5px var(--f-body);color:var(--ink)}
+.goal-ed input[type=text]:focus-visible{outline:none;border-color:var(--red);box-shadow:0 0 0 4px rgba(208,20,27,.14)}
+.goal-top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:8px 16px;margin-top:6px}
+.gv b{font:700 40px/1 var(--f-display);letter-spacing:.01em}
+.gv span{display:block;color:var(--muted);font-size:13.5px;margin-top:3px}
+.gst{display:inline-flex;align-items:center;gap:8px;border-radius:10px;padding:7px 13px;font:700 13px var(--f-body);letter-spacing:.02em}
+.gst.bad{background:var(--red);color:#fff}.gst.bad .dot{background:#fff}
+.gst.warn{background:#FBEFC2;color:#5B4700}.gst.warn .dot{background:#E8B923}
+.gst.ok{background:#D9EEE2;color:#0F4A29}.gst.ok .dot{background:#2FA566}
+.thermo{display:flex;align-items:center;margin:8px 0 0}
+.th-bulb{width:34px;height:34px;border-radius:50%;flex:none;margin-right:-12px;z-index:2;background:var(--tc);box-shadow:0 0 0 4px #fff,0 8px 18px -8px var(--tc)}
+.goal.bad .th-bulb{animation:ping2 2.2s ease-in-out infinite}
+@keyframes ping2{0%,100%{box-shadow:0 0 0 4px #fff,0 0 0 4px transparent}50%{box-shadow:0 0 0 4px #fff,0 0 0 10px rgba(208,20,27,.16)}}
+.th-wrap{flex:1;position:relative;padding:22px 0 0}
+.th-track{height:20px;border-radius:10px;background:linear-gradient(90deg,#F6D4D6 0 33.34%,#FAEFC4 33.34% 66.67%,#D3EBDD 66.67%);position:relative;overflow:hidden;padding-left:0}
+.th-fill{position:absolute;inset:0 auto 0 0;background:var(--tc);border-radius:10px 8px 8px 10px;transition:width .4s ease}
+.th-mark{position:absolute;top:14px;height:34px;width:2px;background:var(--ink);transform:translateX(-1px);border-radius:1px}
+.th-mark span{position:absolute;top:-13px;left:50%;transform:translateX(-50%);white-space:nowrap;font:600 11px var(--f-body);color:var(--ink-2)}
+.th-mark.l span{left:0;transform:none}.th-mark.r span{left:auto;right:0;transform:none}
+.th-scale{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);margin-top:6px}
+main.enter .th-fill{animation:grow .9s cubic-bezier(.2,.7,.2,1) both}
+.gband{display:flex;gap:12px;align-items:flex-start;border-radius:12px;padding:12px 14px;margin-top:12px}
+.gband p{margin:0;font-size:14.5px;line-height:1.45}
+.gband svg{width:20px;height:20px;flex:none;margin-top:1px}
+.gband.bad{background:var(--red-soft);color:#5A0A0E;animation:alertpulse 2s ease-in-out infinite}
+.gband.warn{background:#FBF3D2;color:#4F3F00}
+.gband.ok{background:#DDF1E6;color:#0F4A29}
+.gstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:12px}
+.gstats div{background:var(--card-2);border-radius:12px;padding:11px 13px}
+.gstats small{display:block;font:600 11px var(--f-body);letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.gstats b{display:block;font:700 22px/1.15 var(--f-display);letter-spacing:.01em;margin-top:2px;overflow-wrap:anywhere}
+.gstats span{display:block;font-size:12.5px;color:var(--muted);margin-top:1px}
+@media(max-width:720px){.gv b{font-size:32px}.th-bulb{width:28px;height:28px}.gstats{grid-template-columns:1fr 1fr}}
+@media print{
+  .pr-goal{margin:8px 0 0;border:1px solid #DAE1E8;border-left:5px solid var(--g,#D0141B);border-radius:8px;padding:8px 12px;background:#F5F8FA;break-inside:avoid}
+  .pr-goal b{font-weight:700}
+  .pr-goal .bar{height:8px;border-radius:4px;background:#E3E9EE;margin:6px 0;position:relative;overflow:hidden}
+  .pr-goal .bar i{position:absolute;inset:0 auto 0 0;background:var(--g,#D0141B)}
+}
+/* v7b */
+.brandname{white-space:nowrap;flex-direction:row;align-items:baseline;flex-wrap:wrap}
+.brandname small{flex-basis:100%}
+.gstats b{overflow-wrap:normal;white-space:nowrap}
+@media(max-width:720px){.gstats b{font-size:19px}.brandname{font-size:17px}}
 </style>
 
 </head>
@@ -432,7 +489,7 @@ main.enter .cols .d i{animation:rise .6s ease both}
   <form class="gate-card" id="gateForm" autocomplete="off">
     <div class="gate-top"><span class="logo" role="img" aria-label="Truck Center ABC"></span></div>
     <div class="gate-body">
-      <h1>Painel Comercial</h1>
+      <h1>Pitstop · Comercial</h1>
       <p>Digite a senha para abrir o acompanhamento.</p>
       <div class="field">
         <label for="pw">Senha</label>
@@ -447,7 +504,7 @@ main.enter .cols .d i{animation:rise .6s ease both}
 <div id="app" class="hidden">
   <header class="top">
     <div class="top-in">
-      <span class="logo" role="img" aria-label="Truck Center ABC"></span>
+      <div class="brandwrap"><span class="logo" role="img" aria-label="Truck Center ABC"></span><span class="brandname">PIT<b>STOP</b><small>Comercial</small></span></div>
       <form class="hdr-search" id="hdrSearch" role="search"><input id="gq" type="search" placeholder="Buscar placa, cliente ou OS" aria-label="Buscar placa, cliente ou OS" autocomplete="off"><button type="submit" aria-label="Buscar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button></form>
       <div class="top-tools">
         <label class="switch"><input type="checkbox" id="demoSw"><span class="trk"></span><span class="t">Demonstração</span></label>
@@ -727,7 +784,8 @@ function viewResumo(){
   const cycAvg=cyc.length? cyc.reduce((t,o)=>t+o.cycle,0)/cyc.length : null;
   const rc=recompraCounts();
   const lateN=abertas.filter(o=>isLate(o,agg)).length, esf=esfriando().length;
-  const chips=[];
+  const chips=[]; const G=goalCalc();
+  if(G.st!=='ok') chips.push(`<button class="chip ${G.st==='bad'?'red':'yellow'}" data-act="goalScroll"><span class="dot ${G.st==='bad'?'':'yellow'}"></span>Meta do mês: ${G.pctReal}% · ${G.st==='bad'?'abaixo do ritmo':'quase no ritmo'}</button>`);
   if(lateN) chips.push(`<button class="chip red" data-act="goto" data-v="etapas"><span class="bell"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></span>${lateN} OS ${S.meta.some(x=>x>0)?'acima da meta':'acima do normal'}</button>`);
   if(rc.vencidos) chips.push(`<button class="chip yellow" data-act="gotoRec" data-v="vencidos"><span class="dot red"></span>${NF.format(rc.vencidos)} clientes passaram de ${S.thr.vencido} dias</button>`);
   if(esf) chips.push(`<button class="chip white" data-act="gotoRec" data-v="esfria"><span class="dot yellow"></span>${esf} clientes esfriando</button>`);
@@ -735,6 +793,7 @@ function viewResumo(){
   if(!chips.length) chips.push('<span class="chip green">Tudo em dia</span>');
   return `${demoNote()}${filtersBar(true)}
   <section class="hero slim"><h1>Atenção agora</h1><div class="chips">${chips.join('')}</div><div class="hero-act"><button class="chip ghost" data-act="printRep">Imprimir relatório</button><button class="chip ghost" data-act="sendResumo">Resumo no WhatsApp</button></div></section>
+  ${goalCard()}
   <div class="grid kpis">
     ${kpi('OS no período',NF.format(list.length),`${fin.length} finalizadas · ${abertas.length} em andamento`)}
     ${kpi('Ciclo médio',fmtH(cycAvg),'Da entrada até finalizado')}
@@ -1037,12 +1096,13 @@ function buildResumo(){
   const late=ab.filter(o=>isLate(o,agg)).sort((a,b)=>b.openMs-a.openMs);
   const rc=recompraCounts(), w7=list.filter(o=>NOW-o.base<=7*DAY).length, esf=esfriando().length;
   const un=S.local==='all'?'':' · unidade '+((CH.find(o=>norm(o.local)===S.local)||{}).local||S.local);
-  const L=['*Resumo comercial · Truck Center ABC*', fmtDT(NOW)+(S.demo?' (dados de demonstração)':''),
+  const L=['*Pitstop · Resumo comercial · Truck Center ABC*', fmtDT(NOW)+(S.demo?' (dados de demonstração)':''),
     'Período: '+(S.month==='all'?'todos os meses':monthLabel(S.month))+un, '',
     `OS no período: ${NF.format(list.length)} (${fin.length} finalizadas, ${ab.length} em andamento) · últimos 7 dias: ${w7}`,
     'Ciclo médio: '+fmtH(cA),
     `Faturado: ${BRL.format(sum(fat))} (${fat.length} OS)`,
     `Ainda não faturado: ${BRL.format(sum(nf))} (${nf.length} OS)`];
+  { const G=goalCalc(); L.push(`Meta do mês: ${BRL.format(G.real)} de ${BRL.format(G.meta)} (${G.pctReal}%)`+(G.batida?' · meta batida':` · faltam ${BRL.format(G.falta)}`+(G.porDia!=null?` · ${BRL.format(G.porDia)} por dia útil (restam ${G.res})`:''))); }
   if(maxI>=0) L.push(`Maior espera: ${STEPS[maxI].n} (média ${fmtH(agg[maxI].avg)})`);
   L.push('', `OS paradas acima ${S.meta.some(x=>x>0)?'da meta':'do normal'}: ${late.length}`);
   late.slice(0,3).forEach(o=>L.push(`- ${o.placa||'sem placa'} (${titleCase(o.cliente)||'sem cliente'}): ${fmtH(o.openMs)} em ${STAGES[o.last].toLowerCase()}`));
@@ -1097,6 +1157,67 @@ function startAutoRefresh(){
 }
 
 
+
+/* ============ META DO MÊS (PITSTOP) ============ */
+S.goal={valor:500000,sab:false};
+try{ const g=JSON.parse(localStorage.getItem('tabc_goal')||'null'); if(g&&g.valor>0) S.goal={valor:+g.valor,sab:!!g.sab}; }catch(e){}
+function saveGoal(){ try{ localStorage.setItem('tabc_goal',JSON.stringify(S.goal)); }catch(e){} }
+function parseMoney(t){
+  let s=String(t).toLowerCase().replace(/r\$|\s/g,''), mul=1;
+  if(s.endsWith('k')){ mul=1000; s=s.slice(0,-1); } else if(s.endsWith('mil')){ mul=1000; s=s.slice(0,-3); }
+  s=/,\d{1,2}$/.test(s)? s.replace(/\./g,'').replace(',','.') : s.replace(/[.,]/g,'');
+  const n=parseFloat(s); return isNaN(n)?0:n*mul;
+}
+function goalCalc(){
+  const y=NOW.getFullYear(), m=NOW.getMonth(), last=new Date(y,m+1,0).getDate(), hoje=NOW.getDate();
+  const maxW=S.goal.sab?6:5; let tot=0,pas=0,res=0;
+  for(let d=1;d<=last;d++){ const w=new Date(y,m,d).getDay(); if(w<1||w>maxW) continue; tot++; if(d<hoje) pas++; else res++; }
+  const k=monthKey(NOW), inM=CH.filter(o=>monthKey(o.base)===k);
+  const fat=inM.filter(o=>o.fat), nf=inM.filter(o=>!o.fat);
+  const sum=a=>a.reduce((t,o)=>t+o.valor,0);
+  const meta=S.goal.valor, real=sum(fat), pend=sum(nf), falta=Math.max(0,meta-real);
+  const esperado=tot? meta*pas/tot : 0, ratio=esperado>0? real/esperado : 1;
+  const st = real>=meta||ratio>=1 ? 'ok' : ratio>=0.8 ? 'warn' : 'bad';
+  const media=pas>0? real/pas : null, proj=media!=null? media*tot : null, ticket=fat.length? real/fat.length : null;
+  const porDia=res>0? falta/res : null;
+  return {meta,real,pend,pendN:nf.length,falta,tot,pas,res,esperado,st,media,proj,ticket,porDia,fatN:fat.length,batida:real>=meta,
+    pctReal:pct(real,meta), pctEsp:meta>0? esperado/meta*100 : 0, mes:monthLabel(k)};
+}
+function goalText(G){
+  if(G.batida) return `Meta batida! O Pitstop já faturou ${BRL.format(G.real)}, ${BRL.format(G.real-G.meta)} acima da meta de ${BRL.format(G.meta)}.`;
+  let t=`Para bater a meta do Pitstop faltam ${BRL.format(G.falta)}`;
+  if(G.res>0){
+    t+=`: é preciso faturar ${BRL.format(G.porDia)} por dia útil (restam ${G.res}).`;
+    if(G.media!=null) t+=` Hoje a média é ${BRL.format(G.media)} por dia útil.`;
+    if(G.ticket) t+=` Isso equivale a cerca de ${(G.porDia/G.ticket).toFixed(1).replace('.',',')} OS por dia no ticket médio de ${BRL.format(G.ticket)}.`;
+  } else t+='. Não restam dias úteis neste mês.';
+  return t;
+}
+function goalCard(){
+  const G=goalCalc(), pr=Math.min(100,G.pctReal), pe=Math.min(100,G.pctEsp);
+  const lab=G.batida?'Meta batida':G.st==='ok'?'No ritmo':G.st==='warn'?'Quase no ritmo':'Abaixo do ritmo';
+  const icon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>';
+  const mk=G.esperado>0&&!G.batida? `<div class="th-mark ${pe<14?'l':pe>86?'r':''}" style="left:${pe}%"><span>ritmo de hoje · ${BRL.format(G.esperado)}</span></div>` : '';
+  const stat=(l,v,s)=>`<div><small>${l}</small><b class="num">${v}</b><span>${s}</span></div>`;
+  return `<section class="card goal ${G.st}" id="goalCard">
+    <div class="card-h"><h2>Meta do mês · Pitstop<small>Faturado em ${G.mes} contra a meta</small></h2>
+      <div class="goal-ed"><label>Meta <input id="goalV" type="text" inputmode="numeric" value="${BRL.format(G.meta)}" aria-label="Meta do mês em reais"></label>
+      <label><input id="goalS" type="checkbox" ${S.goal.sab?'checked':''}> Conta sábado</label></div></div>
+    <div class="goal-top"><div class="gv"><b class="num">${BRL.format(G.real)}</b><span>de ${BRL.format(G.meta)} · ${G.pctReal}% da meta</span></div>
+      <span class="gst ${G.st}"><span class="dot"></span>${lab}</span></div>
+    <div class="thermo"><div class="th-bulb"></div><div class="th-wrap"><div class="th-track"><div class="th-fill" style="width:${pr}%"></div></div>${mk}
+      <div class="th-scale"><span>R$ 0</span><span>${BRL.format(G.meta/4)}</span><span>${BRL.format(G.meta/2)}</span><span>${BRL.format(G.meta*3/4)}</span><span>${BRL.format(G.meta)}</span></div></div></div>
+    <div class="gband ${G.st}" role="status">${G.st==='bad'?'<span class="bell">'+icon+'</span>':icon}<p>${goalText(G)}</p></div>
+    <div class="gstats">
+      ${stat('Falta para a meta',BRL.format(G.falta),G.batida?'meta atingida':G.pctReal+'% concluído')}
+      ${stat('Precisa por dia útil',G.batida?'—':G.porDia!=null?BRL.format(G.porDia):'—',G.res+' dias úteis restantes')}
+      ${stat('Ritmo atual',G.media!=null?BRL.format(G.media):'—','por dia útil'+(G.ticket?' · ticket '+BRL.format(G.ticket):''))}
+      ${stat('Projeção do mês',G.proj!=null?BRL.format(G.proj):'—',G.proj!=null?pct(G.proj,G.meta)+'% da meta':'sem dias fechados')}
+    </div>
+    <p class="note">Ainda sem faturar neste mês: ${BRL.format(G.pend)} (${G.pendN} OS)${G.pend>0&&!G.batida?' — se tudo for faturado, chega a '+pct(G.real+G.pend,G.meta)+'% da meta':''}. Conta dias úteis de segunda a ${S.goal.sab?'sábado':'sexta'}; feriados não são descontados. A meta fica salva neste navegador.</p>
+  </section>`;
+}
+
 /* ============ RELATÓRIO IMPRESSO ============ */
 const BRL2=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
 function buildPrint(){
@@ -1114,7 +1235,7 @@ function buildPrint(){
   const h5='<th>Placa</th><th>Cliente</th><th>Status</th><th>Entrada</th><th class="n">Valor</th>';
   const f5=(n,t)=>`<tr><td colspan="4">Total · ${n} ${n===1?'carro':'carros'}</td><td class="n">${BRL2.format(t)}</td></tr>`;
   $('#printRoot').innerHTML=`
-  <div class="pr-head"><span class="logo" role="img" aria-label="Truck Center ABC"></span><div><h1>Relatório comercial</h1><p>Período: ${per} · ${esc(un)} · emitido em ${fmtDT(new Date())}</p></div></div>
+  <div class="pr-head"><span class="logo" role="img" aria-label="Truck Center ABC"></span><div><h1>Pitstop · Relatório comercial</h1><p>Período: ${per} · ${esc(un)} · emitido em ${fmtDT(new Date())}</p></div></div>
   ${S.demo?'<div class="pr-demo">Atenção: este relatório usa dados de demonstração (fictícios). Desligue "Demonstração" no painel para imprimir só o que está na planilha.</div>':''}
   <div class="pr-kpis">
     <div><small>OS no período</small><b>${NF.format(list.length)}</b></div>
@@ -1123,13 +1244,14 @@ function buildPrint(){
     <div class="r"><small>Sem faturar</small><b>${BRL2.format(sum(nf))}</b></div>
     <div><small>Ciclo médio</small><b>${fmtH((()=>{const c=list.filter(o=>!o.open&&o.cycle!=null);return c.length?c.reduce((t,o)=>t+o.cycle,0)/c.length:null})())}</b></div>
   </div>
+  ${(()=>{ const G=goalCalc(), c=G.st==='ok'?'#2FA566':G.st==='warn'?'#E8B923':'#D0141B'; return `<div class="pr-goal" style="--g:${c}"><b>Meta do mês (${G.mes}): ${BRL2.format(G.real)} de ${BRL2.format(G.meta)} · ${G.pctReal}%</b><div class="bar"><i style="width:${Math.min(100,G.pctReal)}%"></i></div>${esc(goalText(G))}</div>`; })()}
   <h2>Carros sem faturar <span><b>${nf.length}</b> · total <b>${BRL2.format(sum(nf))}</b></span></h2>
   ${tbl(h5,rNF,f5(nf.length,sum(nf)))}
   <h2>Carros faturados <span><b>${fat.length}</b> · total <b>${BRL2.format(sum(fat))}</b></span></h2>
   ${tbl(h5,rF,f5(fat.length,sum(fat)))}
   <h2>Status dos carros em processo <span><b>${ab.length}</b> ${ab.length===1?'carro':'carros'} agora</span></h2>
   ${tbl('<th>Placa</th><th>Cliente</th><th>Etapa atual</th><th>Entrada</th><th class="n">Parado há</th><th>Responsável</th><th>Prazo</th>',rAB,'<tr><td colspan="7">'+ab.filter(o=>isLate(o,agg)).length+' atrasados · '+(S.meta.some(x=>x>0)?'critério: metas por etapa':'critério: 1,5× a média da etapa')+'</td></tr>')}
-  <div class="pr-foot">Truck Center ABC · Relatório comercial · uso interno</div>`;
+  <div class="pr-foot">Truck Center ABC · Pitstop · Relatório comercial · uso interno</div>`;
 }
 window.addEventListener('beforeprint',buildPrint);
 
@@ -1160,6 +1282,7 @@ document.addEventListener('click',e=>{
   const b=e.target.closest('[data-act]'); if(!b) return;
   const a=b.dataset.act, v=b.dataset.v;
   if(a==='gotoRec'){ S.recompra=v; S.shown.rec=40; S.sortDir=null; S.q=''; return setTab('recompra'); }
+  if(a==='goalScroll'){ const el=$('#goalCard'); if(el) el.scrollIntoView({behavior:'smooth',block:'center'}); return; }
   if(a==='printRep'){ buildPrint(); window.print(); return; }
   if(a==='copyResumo'){ const t=buildResumo(); const done=()=>{b.textContent='Copiado!'; setTimeout(()=>{b.textContent='Copiar resumo'},1600)}; try{ navigator.clipboard.writeText(t).then(done,()=>fallbackCopy(t,done)); }catch(err){ fallbackCopy(t,done); } return; }
   if(a==='sendResumo'){ window.open('https://wa.me/'+WA_RESUMO+'?text='+encodeURIComponent(buildResumo()),'_blank','noopener'); return; }
@@ -1180,7 +1303,9 @@ document.addEventListener('click',e=>{
 function fallbackCopy(t,done){ const ta=document.createElement('textarea'); ta.value=t; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');done()}catch(e){} ta.remove(); }
 document.addEventListener('change',e=>{
   const id=e.target.id;
-  if(/^mt[0-5]$/.test(id)){ const v=parseFloat(String(e.target.value).replace(',','.')); S.meta[+id[2]]=v>0?v:null; saveMeta(); render(); }
+  if(id==='goalV'){ const v=parseMoney(e.target.value); if(v>0){ S.goal.valor=v; saveGoal(); } render(); }
+  else if(id==='goalS'){ S.goal.sab=e.target.checked; saveGoal(); render(); }
+  else if(/^mt[0-5]$/.test(id)){ const v=parseFloat(String(e.target.value).replace(',','.')); S.meta[+id[2]]=v>0?v:null; saveMeta(); render(); }
   else if(id==='fMes'){S.month=e.target.value;S.shown={os:12,rec:40};render();}
   else if(id==='fLocal'){S.local=e.target.value;S.shown={os:12,rec:40};render();}
   else if(id==='thA'||id==='thP'||id==='thV'){
