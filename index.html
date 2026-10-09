@@ -652,6 +652,18 @@ main.enter .pmap-bar i{animation:grow .9s cubic-bezier(.2,.7,.2,1) both}
 main.enter .dbar i,main.enter .rs-bar i{animation:grow .8s cubic-bezier(.2,.7,.2,1) both}
 .card-h .seg{align-self:flex-start}
 @media(max-width:720px){.rs-row{grid-template-columns:1fr auto}.rs-row .rs-bar{grid-column:1 / -1;order:3}.rs-sub{grid-column:1 / -1;order:4}.mt-row{grid-template-columns:1fr}.mt-row .v{text-align:left}}
+.man details{border:1px solid var(--line);border-radius:var(--r-sm);background:var(--card);margin-top:8px}
+.man summary{cursor:pointer;padding:13px 16px;font-weight:700;font-size:15px;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.man summary::-webkit-details-marker{display:none}
+.man summary::after{content:"+";color:var(--red);font-size:20px;font-weight:600}
+.man details[open] summary::after{content:"–"}
+.man .mb{padding:2px 16px 16px;font-size:14px;line-height:1.55;color:var(--ink)}
+.man .mb h4{margin:12px 0 4px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.man .mb ul{margin:0;padding-left:18px}.man .mb li{margin:3px 0}
+.man .mb .go{margin-top:12px}
+.man dl{margin:0;display:grid;grid-template-columns:minmax(110px,170px) 1fr;gap:8px 14px;font-size:14px}
+.man dt{font-weight:700}.man dd{margin:0;color:var(--ink)}
+@media(max-width:560px){.man dl{grid-template-columns:1fr;gap:2px}.man dd{margin-bottom:8px}}
 </style>
 
 </head>
@@ -935,7 +947,7 @@ function workCard(){
 let CH = [];      // chegadas normalizadas (do modo atual)
 let CLI = [];     // clientes normalizados
 let LIVE = null;  // dados lidos da planilha online
-const TABS = [['resumo','Resumo'],['saude','Saúde Pitstop'],['etapas','Tempo por etapa'],['fatura','Faturamento'],['valet','Valetamento'],['visitas','Visitas do mês'],['recompra','Recompra']];
+const TABS = [['resumo','Resumo'],['saude','Saúde Pitstop'],['etapas','Tempo por etapa'],['fatura','Faturamento'],['valet','Valetamento'],['visitas','Visitas do mês'],['recompra','Recompra'],['manual','Manual']];
 
 function loadModel(){
   NOW = new Date();
@@ -1860,7 +1872,31 @@ document.addEventListener('change',e=>{
 /* ============ NAVEGAÇÃO ============ */
 function unitsNote(){ const o=CH.filter(x=>unitOf(x)==='outra'&&x.fat).length; return `<div class="units-note"><span><b>SBC</b> e <b>Mauá</b> têm metas diferentes e são acompanhadas separadamente.</span>${o?`<span style="color:var(--muted)">${o} OS faturadas sem unidade preenchida não entram em nenhuma meta.</span>`:''}</div>`; }
 function viewSaude(){ return `${demoNote()}${unitsNote()}${goalCard('sbc')}${goalCard('maua')}${calCard()}${planCard()}${resCard()}${desCard()}`; }
-const VIEWS={resumo:viewResumo,saude:viewSaude,etapas:viewEtapas,fatura:viewFatura,valet:viewValet,visitas:viewVisitas,recompra:viewRecompra};
+
+function viewManual(){
+  const T=(k,t,intro,pts,ond)=>`<details><summary>${t}</summary><div class="mb"><p style="margin:0">${intro}</p><h4>O que você encontra</h4><ul>${pts.map(p=>`<li>${p}</li>`).join('')}</ul>${ond?`<h4>Para que serve</h4><p style="margin:0">${ond}</p>`:''}<button class="more go" data-act="goto" data-v="${k}">Abrir ${t}</button></div></details>`;
+  const G=[['OS','Ordem de serviço. Cada linha da planilha é uma OS, ligada a uma placa.'],['Faturado','OS que já foi cobrada do cliente (coluna H da planilha). Só o faturado conta para a meta.'],['A faturar','OS aberta ou finalizada que ainda não virou dinheiro.'],['Valor na mão','Soma das OS de um responsável que ainda não foram faturadas.'],['Desistência','Cliente que não fechou o pedido. Vem da coluna Q (sim) e o motivo da coluna R.'],['Horas úteis','Os tempos de espera contam só o expediente (ex.: 8h por dia). Noite e domingo não entram. Ajuste no card Expediente.'],['Metas','SBC tem duas (500 mil e 700 mil). Mauá tem uma só (300 mil). São separadas.'],['Parado','OS que entrou há muitos dias, não finalizou e não foi faturada.']];
+  return `<div class="man">
+  <section class="card"><div class="card-h"><h2>Manual do sistema<small>O que você encontra em cada aba, em linguagem simples</small></h2></div>
+  <p style="margin:0 0 4px;font-size:14px;line-height:1.55">O painel lê a planilha da Pitstop sozinho e atualiza a cada 10 minutos. Para forçar, use <b>Atualizar planilha</b>. Os filtros de <b>mês</b> e <b>unidade</b> no topo valem para as abas. Toque em uma aba abaixo para abrir a explicação.</p></section>
+  <section class="card"><div class="card-h"><h2>Cada aba<small>Toque para abrir</small></h2></div>
+  ${T('resumo','Resumo','A tela do dia a dia. Em poucos segundos mostra o que precisa de atenção.',['<b>Atenção agora</b>: OS sem faturar e clientes que desistiram, com atalho para a lista.','<b>Números do mês</b>: quantidade de OS, valor total, faturado e a faturar.','<b>Esperando agora</b>: OS em andamento, da mais parada para a menos.','<b>Parados há mais de N dias</b>: carros que entraram há tempo, não finalizaram e não foram faturados.','<b>Recompra</b> e <b>tempo médio por etapa</b> resumidos.','Botões de <b>Imprimir relatório</b>, <b>Imprimir por status</b> e <b>Resumo no WhatsApp</b>.'],'Abrir de manhã para saber onde cobrar e imprimir o que o diretor pedir.')}
+  ${T('saude','Saúde Pitstop','Mostra se o mês está no caminho das metas. Conta só OS faturadas.',['<b>Meta SBC</b> (500 mil e 700 mil) e <b>Meta Mauá</b> (300 mil), cada uma no seu cartão, com termômetro, quanto falta, quanto por dia útil e projeção do mês.','<b>Faturado por dia</b>: calendário. Toque em um dia para ver e imprimir só o que foi faturado nele.','<b>Plano de faturamento</b>: quais OS atacar primeiro para bater a meta (alterna SBC/Mauá).','<b>Valor na mão</b> de cada responsável.','<b>Desistências</b>: quantos clientes, quanto em valor, % do mês e os motivos.'],'Acompanhar a meta e decidir onde agir.')}
+  ${T('etapas','Tempo por etapa','Onde as OS ficam paradas dentro da oficina.',['<b>Expediente</b>: define as horas de trabalho usadas na contagem.','<b>Meta de tempo</b> por etapa, comparada com a média real.','<b>Tempo por responsável</b>: quem leva mais em cada etapa (o mais lento em vermelho).','<b>Cada OS, etapa por etapa</b>: toque na OS para ver o tempo em cada setor e o serviço.'],'Achar o gargalo: orçamento, aprovação do cliente, peças etc.')}
+  ${T('fatura','Faturamento','Faturado contra a faturar.',['Percentual do valor faturado e do que falta.','Lista de OS pelo maior valor, com cliente, responsável e situação.'],'Saber quanto dinheiro ainda está parado em OS.')}
+  ${T('valet','Valetamento','Quantos valetamentos cada responsável fez.',['Total por pessoa e gráfico por dia do mês.'],'Acompanhar o trabalho de busca e entrega dos carros.')}
+  ${T('visitas','Visitas do mês','Clientes que mais vieram à oficina no período.',['Ranking por número de entradas de veículo.'],'Reconhecer os melhores clientes.')}
+  ${T('recompra','Recompra','Clientes pelo tempo desde a última compra.',['Faixas: passaram do prazo, perto de vencer, alerta, em dia e nunca compraram.','Listas <b>Esfriando</b> e <b>Frequentes</b>.','Botão do <b>WhatsApp</b> em cada cliente para chamar na hora.'],'Trazer o cliente de volta antes que ele esqueça de nós.')}
+  </section>
+  <section class="card"><div class="card-h"><h2>Imprimir<small>Três jeitos</small></h2></div>
+  <div class="mb" style="padding:0;font-size:14px;line-height:1.55"><ul style="margin:0;padding-left:18px"><li><b>Imprimir relatório</b> (Resumo): escolha seções, status, responsável e local (Todos, Mauá ou SBC).</li><li><b>Imprimir por status</b> (Resumo): uma lista por setor, para entregar e cobrar. Mostra quantas OS são, quanto é do total e das não faturadas.</li><li><b>Dia faturado</b> (Saúde Pitstop): toque no dia do calendário e imprima.</li></ul></div></section>
+  <section class="card"><div class="card-h"><h2>Palavras do painel<small>Glossário</small></h2></div><dl>${G.map(g=>`<dt>${g[0]}</dt><dd>${g[1]}</dd>`).join('')}</dl></section>
+  <section class="card"><div class="card-h"><h2>De onde vêm os dados<small>Colunas da planilha</small></h2></div>
+  <dl><dt>A a E</dt><dd>Data de entrada, placa, colaborador, local e cliente.</dd><dt>F</dt><dd>Status. É ele que define em qual etapa a OS está.</dd><dt>G, H</dt><dd>Número da OS e se foi faturada.</dd><dt>I, J</dt><dd>Responsável e valor.</dd><dt>K a P</dt><dd>Horário em que a OS passou por cada etapa. Só servem para medir tempo.</dd><dt>Q, R</dt><dd>Desistiu (sim) e o motivo.</dd><dt>S</dt><dd>Serviço (tipo de orçamento), aparece ao abrir a OS e nos relatórios.</dd></dl>
+  <p style="font-size:13px;color:var(--muted);margin:12px 0 0">Dica: a chave <b>Demonstração</b> mostra dados fictícios, ideal para apresentar sem expor números reais.</p></section>
+  </div>`;
+}
+const VIEWS={manual:viewManual,resumo:viewResumo,saude:viewSaude,etapas:viewEtapas,fatura:viewFatura,valet:viewValet,visitas:viewVisitas,recompra:viewRecompra};
 function render(){
   $('#tabs').innerHTML=TABS.map(([k,n])=>`<button class="tab" role="tab" data-act="tab" data-v="${k}" aria-selected="${S.tab===k}">${n}</button>`).join('');
   const y=window.scrollY;
