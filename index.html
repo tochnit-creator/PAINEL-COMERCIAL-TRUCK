@@ -1891,9 +1891,6 @@ function viewManual(){
   <section class="card"><div class="card-h"><h2>Imprimir<small>Três jeitos</small></h2></div>
   <div class="mb" style="padding:0;font-size:14px;line-height:1.55"><ul style="margin:0;padding-left:18px"><li><b>Imprimir relatório</b> (Resumo): escolha seções, status, responsável e local (Todos, Mauá ou SBC).</li><li><b>Imprimir por status</b> (Resumo): uma lista por setor, para entregar e cobrar. Mostra quantas OS são, quanto é do total e das não faturadas.</li><li><b>Dia faturado</b> (Saúde Pitstop): toque no dia do calendário e imprima.</li></ul></div></section>
   <section class="card"><div class="card-h"><h2>Palavras do painel<small>Glossário</small></h2></div><dl>${G.map(g=>`<dt>${g[0]}</dt><dd>${g[1]}</dd>`).join('')}</dl></section>
-  <section class="card"><div class="card-h"><h2>De onde vêm os dados<small>Colunas da planilha</small></h2></div>
-  <dl><dt>A a E</dt><dd>Data de entrada, placa, colaborador, local e cliente.</dd><dt>F</dt><dd>Status. É ele que define em qual etapa a OS está.</dd><dt>G, H</dt><dd>Número da OS e se foi faturada.</dd><dt>I, J</dt><dd>Responsável e valor.</dd><dt>K a P</dt><dd>Horário em que a OS passou por cada etapa. Só servem para medir tempo.</dd><dt>Q, R</dt><dd>Desistiu (sim) e o motivo.</dd><dt>S</dt><dd>Serviço (tipo de orçamento), aparece ao abrir a OS e nos relatórios.</dd></dl>
-  <p style="font-size:13px;color:var(--muted);margin:12px 0 0">Dica: a chave <b>Demonstração</b> mostra dados fictícios, ideal para apresentar sem expor números reais.</p></section>
   </div>`;
 }
 const VIEWS={manual:viewManual,resumo:viewResumo,saude:viewSaude,etapas:viewEtapas,fatura:viewFatura,valet:viewValet,visitas:viewVisitas,recompra:viewRecompra};
