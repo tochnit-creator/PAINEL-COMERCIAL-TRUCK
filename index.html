@@ -474,6 +474,17 @@ main.enter .cols .d i{animation:rise .6s ease both}
 .ag-row .nm .ub{display:inline-block;margin-left:6px;padding:0 8px;border-radius:999px;font:700 10.5px var(--f-body);letter-spacing:.07em;text-transform:uppercase;background:var(--ink);color:#fff;vertical-align:2px}
 .ag-row .nm .ub.maua{background:#E8B923;color:#3b2d00}
 
+
+@media print{
+  .pr-big{grid-template-columns:auto auto 1fr}
+  .pr-big .p small{display:block;font:700 9.5px 'Barlow',Arial,sans-serif;letter-spacing:.07em;text-transform:uppercase;color:#5B6772;margin-top:3px}
+  .pr-sum td.n,.pr-sum th.n{text-align:right}
+  .pr-sum tfoot td{font-weight:700;border-top:2px solid #0E1114}
+}
+
+
+.goal-ed input[type=time]{background:var(--card-2);border:1.5px solid var(--line);border-radius:10px;padding:5px 8px;font:700 13.5px var(--f-body);color:var(--ink)}
+
 #printRoot{display:none}
 @media print{
   @page{size:A4;margin:12mm 12mm 14mm}
@@ -722,7 +733,7 @@ function fmtDur(ms){
   if(m<1) return '< 1 min';
   if(m<60) return m+' min';
   const h=Math.floor(m/60), mm=m%60;
-  if(h<24) return mm? h+' h '+mm+' min' : h+' h';
+  if(h<24||S.work.on) return mm? h+' h '+mm+' min' : h+' h';
   const d=Math.floor(h/24), hh=h%24;
   return hh? d+' d '+hh+' h' : d+' d';
 }
@@ -776,7 +787,7 @@ function buildChegada(rows, now){
     const steps=[];
     for(let k=0;k<present.length-1;k++){
       const a=present[k], b=present[k+1], ms=ts[b]-ts[a];
-      if(ms>=0) steps.push({from:a,to:b,ms});
+      if(ms>=0) steps.push({from:a,to:b,ms:workMs(ts[a],ts[b])});
     }
     const lastTs=present[present.length-1], stF=stageFromStatus(r[5]);
     const last=stF!=null?stF:lastTs;
@@ -786,8 +797,8 @@ function buildChegada(rows, now){
       cliente:String(r[4]??'').trim(), os:r[6]==null||r[6]===''?'':String(r[6]).replace(/\.0$/,''),
       fat:norm(r[7]).startsWith('sim'), desist, motivo:String(r[17]??'').trim(), servico:String(r[18]??'').trim(), resp:String(r[8]??'').trim(), valor:pn(r[9]),
       ts, base:ts[present[0]], steps, last, open,
-      openMs: open? Math.max(0, now-ts[lastTs]) : null, statusRaw:String(r[5]??'').trim(),
-      cycle: ts[6]&&ts[present[0]] ? ts[6]-ts[present[0]] : null
+      openMs: open? workMs(ts[lastTs],now) : null, statusRaw:String(r[5]??'').trim(),
+      cycle: ts[6]&&ts[present[0]] ? workMs(ts[present[0]],ts[6]) : null
     });
   }
   return out;
@@ -889,6 +900,38 @@ const S = {aged:15,agedAll:false,
   anim:true, desMode:'month', meta:[null,null,null,null,null,null], recompra:'vencidos', sortDir:null, q:'', qOs:'', shown:{os:12, rec:40}
 };
 let NOW = new Date();
+
+/* ============ EXPEDIENTE (TEMPO COMERCIAL) ============ */
+S.work={on:true,ini:8,fim:17,a1:12,a2:13,sab:false};
+try{ const w=JSON.parse(localStorage.getItem('tabc_work')||'null'); if(w) S.work=Object.assign(S.work,{on:w.on!==false,ini:+w.ini>=0?+w.ini:8,fim:+w.fim>0?+w.fim:17,a1:+w.a1>=0?+w.a1:12,a2:+w.a2>=0?+w.a2:13,sab:!!w.sab}); }catch(e){}
+function saveWork(){ try{ localStorage.setItem('tabc_work',JSON.stringify(S.work)); }catch(e){} }
+function workMs(a,b){
+  if(!a||!b||!(b>a)) return 0;
+  const W=S.work; if(!W.on) return b-a;
+  const segs=(W.a2>W.a1&&W.a1>W.ini&&W.a2<W.fim)?[[W.ini,W.a1],[W.a2,W.fim]]:[[W.ini,W.fim]];
+  let tot=0;
+  const end=new Date(b.getFullYear(),b.getMonth(),b.getDate());
+  for(let d=new Date(a.getFullYear(),a.getMonth(),a.getDate()); d<=end; d=new Date(d.getFullYear(),d.getMonth(),d.getDate()+1)){
+    const wd=d.getDay(); if(wd===0||(wd===6&&!W.sab)) continue;
+    const t0=d.getTime();
+    for(const [s,e] of segs){ if(e<=s) continue; const lo=Math.max(a.getTime(),t0+s*3600000), hi=Math.min(b.getTime(),t0+e*3600000); if(hi>lo) tot+=hi-lo; }
+  }
+  return tot;
+}
+function workPerDay(){ const W=S.work; return Math.max(0,(W.fim-W.ini)-((W.a2>W.a1&&W.a1>W.ini&&W.a2<W.fim)?(W.a2-W.a1):0)); }
+const hm=h=>{ const H=Math.floor(h), M=Math.round((h-H)*60); return String(H).padStart(2,'0')+':'+String(M).padStart(2,'0'); };
+const fromHM=v=>{ const m=/^(\d{1,2}):(\d{2})/.exec(String(v)); return m?(+m[1]+(+m[2])/60):null; };
+function workNote(){ const W=S.work; if(!W.on) return 'Tempos em horas corridas (24 h).'; const lunch=(W.a2>W.a1&&W.a1>W.ini&&W.a2<W.fim)?` (almoço ${hm(W.a1)}–${hm(W.a2)})`:''; return `Tempos em horas úteis: expediente ${hm(W.ini)}–${hm(W.fim)}${lunch}, ${W.sab?'segunda a sábado':'segunda a sexta'}.`; }
+function workCard(){
+  const W=S.work, pd=workPerDay(), f1=n=>String(n).replace('.',',');
+  return `<section class="card" id="workCard"><div class="card-h"><h2>Expediente<small>Os tempos de espera contam só as horas de trabalho, e não o relógio corrido</small></h2>
+    <div class="goal-ed"><label><input id="wkOn" type="checkbox" ${W.on?'checked':''}> Contar só horas úteis</label>
+    <label>Início <input id="wkIni" type="time" value="${hm(W.ini)}"></label><label>Fim <input id="wkFim" type="time" value="${hm(W.fim)}"></label>
+    <label>Almoço <input id="wkA1" type="time" value="${hm(W.a1)}"> até <input id="wkA2" type="time" value="${hm(W.a2)}"></label>
+    <label><input id="wkSab" type="checkbox" ${W.sab?'checked':''}> Sábado</label></div></div>
+    <p class="note">${W.on?`Hoje cada dia útil vale <b>${f1(pd)} h</b>. Uma OS que fica parada da sexta às ${hm(Math.max(W.ini,W.fim-1))} até a segunda às ${hm(Math.min(W.fim,W.ini+1))} soma só 2 h (1 h na sexta e 1 h na segunda), e não 65 h. Noites, almoço e fins de semana não entram na conta. Isso vale para as médias por etapa, o “parada há”, o ciclo, os atrasos e as metas por etapa.`:'Contagem em horas corridas (24 h por dia, inclusive noites e fins de semana).'}</p></section>`;
+}
+
 let CH = [];      // chegadas normalizadas (do modo atual)
 let CLI = [];     // clientes normalizados
 let LIVE = null;  // dados lidos da planilha online
@@ -968,7 +1011,7 @@ function viewResumo(){
   <section class="hero slim"><h1>Atenção agora</h1><div class="chips">${chips.join('')}</div><div class="hero-act"><button class="chip ghost" data-act="printRep">Imprimir relatório</button><button class="chip ghost" data-act="stOpen">Imprimir por status</button><button class="chip ghost" data-act="sendResumo">Resumo no WhatsApp</button></div></section>
   <div class="grid kpis">
     ${kpi('OS no período',NF.format(list.length),`${fin.length} finalizadas · ${abertas.length} em andamento`)}
-    ${kpi('Ciclo médio',fmtH(cycAvg),'Da entrada até finalizado')}
+    ${kpi('Ciclo médio',fmtH(cycAvg),'Da entrada até finalizado'+(S.work.on?' · horas úteis':''))}
     ${kpi('Faturado',BRL.format(sum(fat)),`${fat.length} OS faturadas`)}
     ${kpi('Ainda não faturado',BRL.format(sum(nfat)),`${nfat.length} OS`,'hot')}
     ${kpi('Maior espera',maxI>=0?STEPS[maxI].n.replace(' até ',' → '):'—',maxI>=0?`Média de ${fmtH(agg[maxI].avg)}`:'Sem dados no período','gold')}
@@ -1048,7 +1091,7 @@ function viewEtapas(){
   <section class="card"><div class="card-h"><h2>Média de espera por etapa<small>Cada barra é a fatia do tempo total médio que a OS passa naquela etapa</small></h2>
     <div class="kpi" style="padding:8px 12px"><span class="l">Ciclo médio completo</span><span class="v num" style="font-size:28px">${fmtH(cycAvg)}</span></div></div>
     ${stageBars(agg)}</section>
-  ${metaCard(list,agg)}${respCard(list)}
+  ${workCard()}${metaCard(list,agg)}${respCard(list)}
   <section class="card"><div class="card-h"><h2>Cada OS, etapa por etapa<small>Toque numa OS para ver quanto tempo ficou em cada setor e o percentual</small></h2></div>
     <div class="legend">${STEPS.map((s,i)=>`<span><b style="background:${SC[i]}"></b>${s.n.split(' até ')[0]}</span>`).join('')}<span><b style="background:repeating-linear-gradient(135deg,var(--red) 0 3px,#F0A3A6 3px 6px)"></b>Parada agora</span></div>
     <div class="toolbar"><input class="search" id="qOs" type="search" placeholder="Buscar placa, cliente ou OS" value="${esc(S.qOs)}" aria-label="Buscar OS"><span style="color:var(--muted);font-size:13px">${NF.format(rows.length)} OS</span></div>
@@ -1385,7 +1428,7 @@ function planCard(){
   const show=P.list.slice(0,Math.min(P.list.length,Math.max(12,P.cut+2),25));
   const rows=show.map((x,i)=>{
     const o=x.o;
-    const acao=x.t===1?'Emitir a nota · finalizada há '+fmtH(o.ts[6]?NOW-o.ts[6]:0):PL_ACAO[o.last]+' · parada há '+fmtH(o.openMs);
+    const acao=x.t===1?'Emitir a nota · finalizada há '+fmtH(o.ts[6]?workMs(o.ts[6],NOW):0):PL_ACAO[o.last]+' · parada há '+fmtH(o.openMs);
     return `<div class="pl-row ${inB.has(o)?'in':''}"><span class="n">${i+1}</span>
       <div class="nm"><b>${esc(o.placa||'—')}</b> · ${esc(titleCase(o.cliente)||'Sem cliente')}<span>${acao}${inB.has(o)?' · cesta de hoje':''}</span></div>
       <span class="pill ${tag[x.t][0]}">${tag[x.t][1]}</span>
@@ -1499,7 +1542,11 @@ function goalCard(u){
       ${one?'':stat('Falta · meta 2',G.b2?'—':f(G.falta2),G.b2?'batida':G.pct2+'% concluído')}
       ${one?'':stat('Por dia útil · meta 2',G.b2?'—':G.porDia2!=null?f(G.porDia2):'—',G.res+' dias úteis restantes')}
       ${stat('Ritmo atual',G.media!=null?f(G.media):'—','por dia útil'+(G.ticket?' · ticket '+f(G.ticket):''))}
-      ${stat('Projeção do mês',G.proj!=null?f(G.proj):'—',G.proj!=null?(one?pct(G.proj,G.m1)+'% da meta':pct(G.proj,G.m1)+'% da meta 1 · '+pct(G.proj,G.m2)+'% da meta 2'):'sem dias fechados')}
+    </div>
+    <div class="gstats" style="grid-template-columns:repeat(auto-fit,minmax(210px,1fr))">
+      ${(()=>{ if(G.proj==null) return stat('Projeção do mês','—','sem dias fechados'); const d=m=>G.proj>=m?'sobra '+f(G.proj-m):'faltam '+f(m-G.proj);
+        if(one) return stat('Projeção do mês',f(G.proj),pct(G.proj,G.m1)+'% da meta · '+d(G.m1));
+        return stat('Projeção · meta 1',f(G.proj),pct(G.proj,G.m1)+'% da meta 1 · '+d(G.m1))+stat('Projeção · meta 2',f(G.proj),pct(G.proj,G.m2)+'% da meta 2 · '+d(G.m2))+stat('Projeção · ambas as metas',G.proj>=G.m2?'Bate as duas':G.proj>=G.m1?'Bate só a meta 1':'Não bate nenhuma','fecha em '+f(G.proj)+' mantendo o ritmo'); })()}
     </div>
     <p class="note">Conta só OS faturadas (coluna H = sim), no dia em que foram finalizadas; OS em aberto e desistências não entram. Dias úteis de segunda a ${S.goal.sab?'sábado':'sexta'}; feriados não são descontados. As metas ficam salvas neste navegador.</p>
   </section>`;
@@ -1553,9 +1600,9 @@ function resCard(){
 }
 
 /* ============ DESISTÊNCIAS ============ */
-function desistInfo(mode){
-  mode=mode||S.desMode;
-  const k=monthKey(NOW), all=CH.filter(o=>mode==='all'||monthKey(o.base)===k), des=all.filter(o=>o.desist);
+function desistInfo(mode,L){
+  mode=mode||S.desMode; L=L||'all';
+  const k=monthKey(NOW), all=CH.filter(o=>(mode==='all'||monthKey(o.base)===k)&&(L==='all'||unitOf(o)===L)), des=all.filter(o=>o.desist);
   const sum=a=>a.reduce((t,o)=>t+o.valor,0);
   const mm=new Map();
   for(const o of des){
@@ -1597,11 +1644,11 @@ const BRL2=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
 function buildPrint(){
   if(window.__prSt) return buildPrintStatus(window.__prSt);
   if(window.__prDay) return buildPrintDay(window.__prDay);
-  const P=S.prt, base=osFiltered(), agg=stageAgg(base), list=base.filter(o=>P.st[o.open?o.last:6]!==false&&(!P.resp||norm(o.resp)===P.resp));
+  const P=S.prt, base=prBase(P), agg=stageAgg(base), list=base.filter(o=>P.st[o.open?o.last:6]!==false&&(!P.resp||norm(o.resp)===P.resp));
   const sum=a=>a.reduce((t,o)=>t+o.valor,0);
   const fat=list.filter(o=>o.fat).sort((a,b)=>b.valor-a.valor), nf=list.filter(o=>(!o.fat&&!o.desist)).sort((a,b)=>b.valor-a.valor);
   const ab=list.filter(o=>o.open).sort((a,b)=>b.openMs-a.openMs);
-  const un=S.local==='all'?'todas as unidades':((CH.find(o=>norm(o.local)===S.local)||{}).local||S.local);
+  const un=locLabel(P.loc);
   const per=S.month==='all'?'todos os meses':monthLabel(S.month);
   const stat=o=>o.open? STAGES[o.last] : 'Finalizado';
   const tbl=(head,rows,foot)=> rows.length? `<table class="pr-t"><thead><tr>${head}</tr></thead><tbody>${rows.join('')}</tbody><tfoot>${foot}</tfoot></table>` : '<div class="pr-empty">Nenhum registro neste período.</div>';
@@ -1620,14 +1667,14 @@ function buildPrint(){
     <div class="r"><small>Sem faturar</small><b>${BRL2.format(sum(nf))}</b></div>
     <div><small>Ciclo médio</small><b>${fmtH((()=>{const c=list.filter(o=>!o.open&&o.cycle!=null);return c.length?c.reduce((t,o)=>t+o.cycle,0)/c.length:null})())}</b></div>
   </div>
-  ${!P.sec.meta?'':['sbc','maua'].map(u=>{ const G=goalCalc(u), f=BRL2.format; if(!G.hasMeta) return `<div class="pr-goal" style="--g:#9FB0BE"><b>Meta ${G.label} (${G.mes}): faturado ${f(G.real)} · meta ainda não definida</b></div>`; const c=G.st==='ok'?'#2FA566':G.st==='warn'?'#E8B923':'#D0141B'; return `<div class="pr-goal" style="--g:${c}"><b>Meta ${G.label} (${G.mes}): ${f(G.real)} · ${G.m2>G.m1?'meta 1 '+f(G.m1)+' ('+G.pct1+'%) · meta 2 '+f(G.m2)+' ('+G.pct2+'%)':'meta '+f(G.m1)+' ('+G.pct1+'%)'}</b><div class="bar"><i style="width:${Math.min(100,pct(G.real,G.m2))}%"></i></div>${esc(goalText(G))}</div>`; }).join('')}
+  ${!P.sec.meta?'':(P.loc==='all'?['sbc','maua']:[P.loc]).map(u=>{ const G=goalCalc(u), f=BRL2.format; if(!G.hasMeta) return `<div class="pr-goal" style="--g:#9FB0BE"><b>Meta ${G.label} (${G.mes}): faturado ${f(G.real)} · meta ainda não definida</b></div>`; const c=G.st==='ok'?'#2FA566':G.st==='warn'?'#E8B923':'#D0141B'; return `<div class="pr-goal" style="--g:${c}"><b>Meta ${G.label} (${G.mes}): ${f(G.real)} · ${G.m2>G.m1?'meta 1 '+f(G.m1)+' ('+G.pct1+'%) · meta 2 '+f(G.m2)+' ('+G.pct2+'%)':'meta '+f(G.m1)+' ('+G.pct1+'%)'}</b><div class="bar"><i style="width:${Math.min(100,pct(G.real,G.m2))}%"></i></div>${esc(goalText(G))}</div>`; }).join('')}
   ${!P.sec.nf?'':`<h2>Carros sem faturar <span><b>${nf.length}</b> · total <b>${BRL2.format(sum(nf))}</b></span></h2>
   ${tbl(h5,rNF,f5(nf.length,sum(nf)))}`}
   ${!P.sec.fat?'':`<h2>Carros faturados <span><b>${fat.length}</b> · total <b>${BRL2.format(sum(fat))}</b></span></h2>
   ${tbl(h5,rF,f5(fat.length,sum(fat)))}`}
   ${!P.sec.ab?'':`<h2>Status dos carros em processo <span><b>${ab.length}</b> ${ab.length===1?'carro':'carros'} agora</span></h2>
-  ${tbl('<th>Placa</th><th>Cliente</th><th>Etapa atual</th><th>Entrada</th><th class="n">Parado há</th><th>Responsável</th><th>Prazo</th>',rAB,'<tr><td colspan="7">'+ab.filter(o=>isLate(o,agg)).length+' atrasados · '+(S.meta.some(x=>x>0)?'critério: metas por etapa':'critério: 1,5× a média da etapa')+'</td></tr>')}`}
-  ${(()=>{ const d=desistInfo('month'); if(!P.sec.des||!d.n) return ''; const f=BRL2.format; return `<h2>Desistências do mês <span><b>${d.n}</b> · ${d.pctOS}% das OS · <b>${f(d.valor)}</b></span></h2>${tbl('<th>Motivo</th><th class="n">Qtd</th><th class="n">% das desistências</th><th class="n">Valor</th>',d.motivos.map(m=>`<tr><td>${esc(m.label)}</td><td class="n">${m.n}</td><td class="n">${pct(m.n,d.n)}%</td><td class="n">${f(m.v)}</td></tr>`),`<tr><td>Total</td><td class="n">${d.n}</td><td class="n">100%</td><td class="n">${f(d.valor)}</td></tr>`)}`; })()}
+  ${tbl('<th>Placa</th><th>Cliente</th><th>Etapa atual</th><th>Entrada</th><th class="n">Parado há</th><th>Responsável</th><th>Prazo</th>',rAB,'<tr><td colspan="7">'+ab.filter(o=>isLate(o,agg)).length+' atrasados · '+(S.meta.some(x=>x>0)?'critério: metas por etapa':'critério: 1,5× a média da etapa')+' · '+workNote()+'</td></tr>')}`}
+  ${(()=>{ const d=desistInfo('month',P.loc); if(!P.sec.des||!d.n) return ''; const f=BRL2.format; return `<h2>Desistências do mês <span><b>${d.n}</b> · ${d.pctOS}% das OS · <b>${f(d.valor)}</b></span></h2>${tbl('<th>Motivo</th><th class="n">Qtd</th><th class="n">% das desistências</th><th class="n">Valor</th>',d.motivos.map(m=>`<tr><td>${esc(m.label)}</td><td class="n">${m.n}</td><td class="n">${pct(m.n,d.n)}%</td><td class="n">${f(m.v)}</td></tr>`),`<tr><td>Total</td><td class="n">${d.n}</td><td class="n">100%</td><td class="n">${f(d.valor)}</td></tr>`)}`; })()}
   <div class="pr-foot">Truck Center ABC · Pitstop · Relatório comercial · uso interno</div>`;
 }
 window.addEventListener('beforeprint',buildPrint);
@@ -1635,11 +1682,14 @@ window.addEventListener('beforeprint',buildPrint);
 
 /* ============ OPÇÕES DO RELATÓRIO ============ */
 const PR_SEC=[['meta','Meta do mês (2 metas)'],['nf','Carros sem faturar'],['fat','Carros faturados'],['ab','Status dos carros em processo'],['des','Desistências do mês'],['svc','Serviço de cada OS']];
-S.prt={sec:{meta:true,nf:true,fat:true,ab:true,des:true,svc:true},st:[true,true,true,true,true,true,true],resp:''};
+S.prt={loc:'all',sec:{meta:true,nf:true,fat:true,ab:true,des:true,svc:true},st:[true,true,true,true,true,true,true],resp:''};
 try{ const p=JSON.parse(localStorage.getItem('tabc_print')||'null'); if(p){ if(p.sec) Object.assign(S.prt.sec,p.sec); if(Array.isArray(p.st)&&p.st.length===7) S.prt.st=p.st.map(x=>x!==false); } }catch(e){}
 function savePrt(){ try{ localStorage.setItem('tabc_print',JSON.stringify({sec:S.prt.sec,st:S.prt.st})); }catch(e){} }
+function locLabel(l){ return l==='maua'?'Mauá':l==='sbc'?'SBC':'todas as unidades'; }
+function prBase(P){ return CH.filter(o=>(S.month==='all'||monthKey(o.base)===S.month)&&(!P.loc||P.loc==='all'||unitOf(o)===P.loc)); }
+function locOpts(cur,attr){ return `<div class="opts" style="grid-template-columns:repeat(3,1fr)">${[['all','Todos'],['maua','Mauá'],['sbc','SBC']].map(([v,l])=>`<label class="opt"><input type="radio" name="loc_${attr}" ${attr==='pk'?'data-pk="loc"':'data-sk="loc"'} value="${v}" ${cur===v?'checked':''}> ${l}</label>`).join('')}</div>`; }
 function prCount(){
-  const P=S.prt, n=osFiltered().filter(o=>P.st[o.open?o.last:6]!==false&&(!P.resp||norm(o.resp)===P.resp)).length;
+  const P=S.prt, n=prBase(P).filter(o=>P.st[o.open?o.last:6]!==false&&(!P.resp||norm(o.resp)===P.resp)).length;
   return n;
 }
 function prRespList(){ const m=new Map(); for(const o of CH){ const k=norm(o.resp); if(k&&!m.has(k)) m.set(k,String(o.resp).trim()); } return [...m.entries()].sort((a,b)=>a[1].localeCompare(b[1],'pt-BR')); }
@@ -1653,13 +1703,15 @@ function prModalHtml(){
     <h4>O que mostrar</h4><div class="opts">${sec}</div>
     <h4>Quais status entram <span><button class="mini" data-act="prSt" data-v="all">Todos</button><button class="mini" data-act="prSt" data-v="open">Só em processo</button><button class="mini" data-act="prSt" data-v="done">Só finalizados</button></span></h4>
     <div class="opts">${st}</div>
+    <h4>Local</h4>${locOpts(P.loc,'pk')}
     <h4>Responsável</h4><select data-pk="resp">${rs}</select>
     <div class="cnt" id="prCnt"></div>
     <div class="acts"><button data-act="prClose">Cancelar</button><button class="go" data-act="prGo">Imprimir / salvar PDF</button></div></div>`;
 }
-function prUpd(){ const e=document.getElementById('prCnt'); if(!e) return; const n=prCount(); e.innerHTML=`<b>${n}</b> ${n===1?'OS entra':'OS entram'} no relatório (de ${osFiltered().length} no período do painel).`; }
+function prUpd(){ const e=document.getElementById('prCnt'); if(!e) return; const n=prCount(); e.innerHTML=`<b>${n}</b> ${n===1?'OS entra':'OS entram'} no relatório (de ${prBase(S.prt).length} no período e local escolhidos).`; }
 function prOpen(){
   let m=document.getElementById('prModal'); if(!m){ m=document.createElement('div'); m.id='prModal'; document.body.appendChild(m); m.addEventListener('click',e=>{ if(e.target===m) prClose(); }); }
+  if(S.local==='sbc'||S.local==='maua') S.prt.loc=S.local;
   m.innerHTML=prModalHtml(); m.classList.add('on'); prUpd();
 }
 function prClose(){ const m=document.getElementById('prModal'); if(m) m.classList.remove('on'); }
@@ -1675,6 +1727,7 @@ document.addEventListener('change',e=>{
   if(t.dataset.pk==='sec') S.prt.sec[t.dataset.k]=t.checked;
   else if(t.dataset.pk==='st') S.prt.st[+t.dataset.k]=t.checked;
   else if(t.dataset.pk==='resp') S.prt.resp=t.value;
+  else if(t.dataset.pk==='loc') S.prt.loc=t.value;
   savePrt(); prUpd();
 });
 
@@ -1736,52 +1789,63 @@ document.addEventListener('click',e=>{
 
 
 /* ============ RELATÓRIO POR STATUS ============ */
-S.stp={st:'2',per:'month',svc:true};
-function stCalc(i,per){
-  const k=monthKey(NOW), loc=o=>S.local==='all'||norm(o.local)===S.local;
+S.stp={loc:'all',st:'2',per:'month',svc:true,sum:true};
+function stCalc(i,per,L){
+  L=L||'all'; const k=monthKey(NOW), loc=o=>L==='all'||unitOf(o)===L;
   const pool=CH.filter(loc);
   const set=per==='all'?pool.filter(o=>!o.desist):pool.filter(o=>monthKey(o.base)===k&&!o.desist);
   const open=set.filter(o=>o.open), agg=stageAgg(set);
   const rows=open.filter(o=>o.last===i).sort((a,b)=>b.openMs-a.openMs);
   const extra=per==='all'?0:pool.filter(o=>o.open&&!o.desist&&o.last===i&&monthKey(o.base)!==k).length;
   const sum=a=>a.reduce((t,o)=>t+o.valor,0);
-  return {i,rows,set,open,agg,n:rows.length,total:set.length,placas:new Set(rows.map(o=>norm(o.placa)||('os'+o.os))).size,
+  const nfAll=set.filter(o=>!o.fat), nNF=rows.filter(o=>!o.fat).length;
+  return {i,rows,set,open,agg,n:rows.length,total:set.length,nfTotal:nfAll.length,nNF,pctNF:pct(nNF,nfAll.length),placas:new Set(rows.map(o=>norm(o.placa)||('os'+o.os))).size,
     pctOS:pct(rows.length,set.length),pctOpen:pct(rows.length,open.length),valor:sum(rows),
     avg:rows.length?rows.reduce((t,o)=>t+o.openMs,0)/rows.length:null,oldest:rows[0]?rows[0].openMs:null,extra};
 }
+
+function stSummary(per,L){
+  const c0=stCalc(0,per,L), set=c0.set, nfAll=set.filter(o=>!o.fat), sum=a=>a.reduce((t,o)=>t+o.valor,0);
+  const rows=[0,1,2,3,4,5].map(i=>{ const c=stCalc(i,per,L); const r=c.rows.filter(o=>!o.fat); return {label:STAGES[i],n:c.n,pctOS:c.pctOS,pctNF:pct(r.length,nfAll.length),valor:c.valor}; });
+  const fin=nfAll.filter(o=>!o.open); rows.push({label:'Finalizado, ainda sem faturar',n:fin.length,pctOS:pct(fin.length,set.length),pctNF:pct(fin.length,nfAll.length),valor:sum(fin)});
+  return {rows,total:set.length,nfTotal:nfAll.length,valorNF:sum(nfAll)};
+}
 function stModalHtml(){
   const P=S.stp;
-  const opts=[0,1,2,3,4,5].map(i=>{ const c=stCalc(i,P.per); return `<option value="${i}" ${P.st===String(i)?'selected':''}>${STAGES[i]} (${c.n} OS)</option>`; }).join('')+`<option value="all" ${P.st==='all'?'selected':''}>Todos os status (uma página para cada)</option>`;
+  const opts=[0,1,2,3,4,5].map(i=>{ const c=stCalc(i,P.per,P.loc); return `<option value="${i}" ${P.st===String(i)?'selected':''}>${STAGES[i]} (${c.n} OS)</option>`; }).join('')+`<option value="all" ${P.st==='all'?'selected':''}>Todos os status (uma página para cada)</option>`;
   return `<div class="box" role="dialog" aria-label="Relatório por status">
     <h3>Imprimir por status</h3><p class="sub">Uma folha por status, para cobrar o setor: quantos carros estão com ele, quanto isso representa e de quem são.</p>
     <h4>Status</h4><select data-sk="st">${opts}</select>
+    <h4>Local</h4>${locOpts(P.loc,'sk')}
     <h4>Período</h4><div class="opts"><label class="opt"><input type="radio" name="stper" data-sk="per" value="month" ${P.per==='month'?'checked':''}> Só o mês atual</label><label class="opt"><input type="radio" name="stper" data-sk="per" value="all" ${P.per==='all'?'checked':''}> Todos os meses</label></div>
-    <h4>Detalhes</h4><div class="opts"><label class="opt"><input type="checkbox" data-sk="svc" ${P.svc?'checked':''}> Mostrar o serviço de cada OS</label></div>
+    <h4>Detalhes</h4><div class="opts"><label class="opt"><input type="checkbox" data-sk="svc" ${P.svc?'checked':''}> Mostrar o serviço de cada OS</label><label class="opt"><input type="checkbox" data-sk="sum" ${P.sum?'checked':''}> Quadro-resumo com todos os status</label></div>
     <div class="cnt">No mês atual, as OS em andamento por status aparecem entre parênteses acima. A porcentagem é sobre o total de OS do período escolhido.</div>
     <div class="acts"><button data-act="prClose">Cancelar</button><button class="go" data-act="stGo">Imprimir / salvar PDF</button></div></div>`;
 }
 function stOpen(){
   let m=document.getElementById('prModal'); if(!m){ m=document.createElement('div'); m.id='prModal'; document.body.appendChild(m); m.addEventListener('click',e=>{ if(e.target===m) prClose(); }); }
+  if(S.local==='sbc'||S.local==='maua') S.stp.loc=S.local;
   m.innerHTML=stModalHtml(); m.classList.add('on');
 }
 function buildPrintStatus(P){
   const f=BRL2.format, per=P.per, mes=per==='all'?'todos os meses':monthLabel(monthKey(NOW));
-  const un=S.local==='all'?'todas as unidades':((CH.find(o=>norm(o.local)===S.local)||{}).local||S.local);
-  const idx=P.st==='all'?[0,1,2,3,4,5].filter(i=>stCalc(i,per).n>0):[+P.st];
+  const un=locLabel(P.loc);
+  const idx=P.st==='all'?[0,1,2,3,4,5].filter(i=>stCalc(i,per,P.loc).n>0):[+P.st];
   const head=`<div class="pr-head"><span class="logo" role="img" aria-label="Truck Center ABC"></span><div><h1>Pitstop · Relatório por status</h1><p>Período: ${mes} · ${esc(un)} · emitido em ${fmtDT(new Date())}</p></div></div>${S.demo?'<div class="pr-demo">Atenção: este relatório usa dados de demonstração (fictícios). Desligue "Demonstração" no painel para imprimir só o que está na planilha.</div>':''}`;
   if(!idx.length){ $('#printRoot').innerHTML=head+'<div class="pr-empty">Nenhuma OS em andamento nos status escolhidos.</div>'; return; }
   const sec=idx.map((i,k)=>{
-    const c=stCalc(i,per);
+    const c=stCalc(i,per,P.loc);
     const rows=c.rows.map(o=>{ const late=isLate(o,c.agg); return `<tr><td class="pl">${esc(o.placa||'—')}</td><td>${esc(o.cliente||'Sem cliente')}${o.os?'<br><small>OS '+esc(o.os)+'</small>':''}${P.svc&&o.servico?'<br><small>Serviço: '+esc(o.servico)+'</small>':''}</td><td>${esc(o.resp||'—')}</td><td>${fmtDate(o.base)}</td><td class="n ${late?'red':''}">${fmtH(o.openMs)}</td><td class="n">${o.valor>0?f(o.valor):'—'}</td></tr>`; }).join('');
-    return `<div class="${k?'pr-page':''}">
-    ${k?head:''}
+    return `<div class="${(k||P.sum)?'pr-page':''}">
+    ${(k||P.sum)?head:''}
     <h2>${esc(STAGES[i])} <span><b>${c.n}</b> ${c.n===1?'OS':'OS'} · <b>${f(c.valor)}</b></span></h2>
-    <div class="pr-big"><div class="p">${c.pctOS}%</div><div class="t"><b>${c.n} ${c.n===1?'carro está':'carros estão'} em “${esc(STAGES[i])}”</b>, o que representa <b>${c.pctOS}%</b> das ${c.total} OS ${per==='all'?'registradas':'que entraram em '+mes}, e ${c.pctOpen}% de todas as OS em andamento (${c.open.length}).${c.extra?` Há ainda ${c.extra} ${c.extra===1?'OS':'OS'} de meses anteriores nesta etapa, fora desta conta.`:''}</div></div>
-    <div class="pr-kpis" style="grid-template-columns:repeat(4,1fr)"><div><small>OS nesta etapa</small><b>${c.n}</b></div><div><small>Placas</small><b>${c.placas}</b></div><div class="r"><small>Valor parado</small><b>${f(c.valor)}</b></div><div><small>Mais antiga parada há</small><b>${fmtH(c.oldest)}</b></div></div>
+    <div class="pr-big"><div class="p">${c.pctOS}%<small>do total de OS</small></div><div class="p">${c.pctNF}%<small>das não faturadas</small></div><div class="t"><b>${c.n} ${c.n===1?'carro está':'carros estão'} em “${esc(STAGES[i])}”</b> (${c.placas} ${c.placas===1?'placa':'placas'}): isso é <b>${c.pctOS}%</b> das ${c.total} OS ${per==='all'?'registradas':'que entraram em '+mes} e <b>${c.pctNF}%</b> das ${c.nfTotal} OS ainda não faturadas.${c.extra?` Há ainda ${c.extra} ${c.extra===1?'OS':'OS'} de meses anteriores nesta etapa, fora desta conta.`:''}</div></div>
+    <div class="pr-kpis" style="grid-template-columns:repeat(5,1fr)"><div><small>OS neste status</small><b>${c.n}</b></div><div><small>% do total de OS</small><b>${c.pctOS}%</b></div><div><small>% das não faturadas</small><b>${c.pctNF}%</b></div><div class="r"><small>Valor parado</small><b>${f(c.valor)}</b></div><div><small>Mais antiga parada há</small><b>${fmtH(c.oldest)}</b></div></div>
     <table class="pr-t"><thead><tr><th>Placa</th><th>Cliente</th><th>Responsável</th><th>Entrada</th><th class="n">Parado há</th><th class="n">Valor</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="4">Total · ${c.n} ${c.n===1?'carro':'carros'} · média parado há ${fmtH(c.avg)}</td><td class="n"></td><td class="n">${f(c.valor)}</td></tr></tfoot></table>
-    <p style="font-size:10px;color:#5B6772;margin:6px 0 0">Tempo em vermelho = acima da meta da etapa (ou 1,5× a média, se não houver meta).${c.rows.some(o=>!(o.valor>0))?' OS sem valor preenchido aparecem com “—”.':''}</p>
+    <p style="font-size:10px;color:#5B6772;margin:6px 0 0">${workNote()} Tempo em vermelho = acima da meta da etapa (ou 1,5× a média, se não houver meta).${c.rows.some(o=>!(o.valor>0))?' OS sem valor preenchido aparecem com “—”.':''}</p>
     <div class="pr-sign"><div>Responsável pelo setor</div><div>Prazo de retorno</div><div>Data</div></div></div>`; }).join('');
-  $('#printRoot').innerHTML=head.replace(/$/,'')+'' + sec.replace(/^<div class="">\s*/,'<div>') + `<div class="pr-foot">Truck Center ABC · Pitstop · Relatório por status · uso interno</div>`;
+  let sumHtml=''; if(P.sum){ const S2=stSummary(per,P.loc), f2=BRL2.format; sumHtml=`<h2>Visão geral por status <span>${S2.total} OS no período · <b>${S2.nfTotal}</b> não faturadas · <b>${f2(S2.valorNF)}</b></span></h2><table class="pr-t pr-sum"><thead><tr><th>Status</th><th class="n">OS</th><th class="n">% do total de OS</th><th class="n">% das não faturadas</th><th class="n">Valor</th></tr></thead><tbody>${S2.rows.map(r=>`<tr><td>${esc(r.label)}</td><td class="n">${r.n}</td><td class="n">${r.pctOS}%</td><td class="n">${r.pctNF}%</td><td class="n">${f2(r.valor)}</td></tr>`).join('')}</tbody><tfoot><tr><td>Total não faturado</td><td class="n">${S2.nfTotal}</td><td class="n">${pct(S2.nfTotal,S2.total)}%</td><td class="n">100%</td><td class="n">${f2(S2.valorNF)}</td></tr></tfoot></table><p style="font-size:10px;color:#5B6772;margin:6px 0 0">“% do total de OS” considera todas as ${S2.total} OS do período; “% das não faturadas” considera só as ${S2.nfTotal} OS que ainda não foram faturadas (em andamento ou finalizadas). Desistências ficam de fora.</p>`; }
+  $('#printRoot').innerHTML=head+sumHtml+sec+`<div class="pr-foot">Truck Center ABC · Pitstop · Relatório por status · uso interno</div>`;
 }
 window.addEventListener('afterprint',()=>{ window.__prSt=null; });
 document.addEventListener('click',e=>{
@@ -1792,8 +1856,8 @@ document.addEventListener('click',e=>{
 document.addEventListener('change',e=>{
   const t=e.target; if(!t.dataset||!t.dataset.sk) return;
   const k=t.dataset.sk;
-  if(k==='svc') S.stp.svc=t.checked; else S.stp[k]=t.value;
-  if(k==='per'){ const m=document.getElementById('prModal'); if(m) m.innerHTML=stModalHtml(); }
+  if(k==='svc'||k==='sum') S.stp[k]=t.checked; else S.stp[k]=t.value;
+  if(k==='per'||k==='loc'){ const m=document.getElementById('prModal'); if(m) m.innerHTML=stModalHtml(); }
 });
 
 /* ============ NAVEGAÇÃO ============ */
@@ -1852,6 +1916,13 @@ document.addEventListener('change',e=>{
   const id=e.target.id;
   if(id==='goalV'){ const v=parseMoney(e.target.value); if(v>0){ S.goal.valor=v; saveGoal(); } render(); }
   else if(id==='goalV2'){ const v=parseMoney(e.target.value); if(v>0){ S.goal.valor2=v; saveGoal(); } render(); }
+  else if(/^wk/.test(id)){
+    const W=S.work;
+    if(id==='wkOn') W.on=e.target.checked; else if(id==='wkSab') W.sab=e.target.checked;
+    else { const v=fromHM(e.target.value); if(v!=null){ if(id==='wkIni') W.ini=v; else if(id==='wkFim') W.fim=v; else if(id==='wkA1') W.a1=v; else if(id==='wkA2') W.a2=v; } }
+    if(W.fim<=W.ini){ W.ini=8; W.fim=17; }
+    saveWork(); loadModel(); render();
+  }
   else if(id==='goalVM'){ const v=parseMoney(e.target.value); S.goalM.valor=v>0?v:0; saveGoalM(); render(); }
   else if(id==='goalV2M'){ const v=parseMoney(e.target.value); S.goalM.valor2=v>0?v:0; saveGoalM(); render(); }
   else if(id==='goalS'){ S.goal.sab=e.target.checked; saveGoal(); render(); }
