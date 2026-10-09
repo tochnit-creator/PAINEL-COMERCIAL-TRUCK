@@ -1287,7 +1287,7 @@ function buildResumo(){
   { const f=BRL.format, d=desistInfo('month');
     for(const u of ['sbc','maua']){ const G=goalCalc(u);
       if(!G.hasMeta){ L.push(`${G.label}: faturado ${f(G.real)} (meta ainda não definida)`); continue; }
-      L.push(`${G.label} · meta 1 (${f(G.m1)}): ${G.pct1}% · ${G.b1?'batida':'faltam '+f(G.falta1)+(G.porDia1!=null?' · '+f(G.porDia1)+' por dia útil (restam '+G.res+')':'')}`, `${G.label} · meta 2 (${f(G.m2)}): ${G.pct2}% · ${G.b2?'batida':'faltam '+f(G.falta2)+(G.porDia2!=null?' · '+f(G.porDia2)+' por dia útil':'')}`); }
+      const one=G.m2<=G.m1; L.push(`${G.label} · ${one?'meta':'meta 1'} (${f(G.m1)}): ${G.pct1}% · ${G.b1?'batida':'faltam '+f(G.falta1)+(G.porDia1!=null?' · '+f(G.porDia1)+' por dia útil (restam '+G.res+')':'')}`); if(!one) L.push(`${G.label} · meta 2 (${f(G.m2)}): ${G.pct2}% · ${G.b2?'batida':'faltam '+f(G.falta2)+(G.porDia2!=null?' · '+f(G.porDia2)+' por dia útil':'')}`); }
     if(d.n) L.push(`Desistências do mês: ${d.n} (${d.pctOS}% das OS)${d.valor>0?' · '+f(d.valor):''} · principal motivo: ${d.top}`); }
   if(maxI>=0) L.push(`Maior espera: ${STEPS[maxI].n} (média ${fmtH(agg[maxI].avg)})`);
   L.push('', `OS paradas acima ${S.meta.some(x=>x>0)?'da meta':'do normal'}: ${late.length}`);
@@ -1366,7 +1366,7 @@ function planCard(){
   const base=G.real, c1=base+P.tot[1], c2=c1+P.tot[2], c3=c2+P.tot[3];
   const sc=Math.max(M2,c3,1), w=v=>(v/sc*100).toFixed(2)+'%', mp1=M1/sc*100, mp2=M2/sc*100;
   const p=v=>pct(v,M)+'%';
-  const tierCard=(t,l,sub)=>{ const c=t===1?c1:t===2?c2:c3; return `<div class="tier t${t}"><small>${l}</small><b class="num">${BRL.format(P.tot[t])}</b><span>${P.cnt[t]} OS · ${sub}</span>${P.cnt[t]&&G.hasMeta?`<span>Chega a ${pct(c,M1)}% da meta 1 · ${pct(c,M2)}% da meta 2</span>`:''}</div>`; };
+  const tierCard=(t,l,sub)=>{ const c=t===1?c1:t===2?c2:c3; return `<div class="tier t${t}"><small>${l}</small><b class="num">${BRL.format(P.tot[t])}</b><span>${P.cnt[t]} OS · ${sub}</span>${P.cnt[t]&&G.hasMeta?`<span>Chega a ${M2>M1?pct(c,M1)+'% da meta 1 · '+pct(c,M2)+'% da meta 2':pct(c,M1)+'% da meta'}</span>`:''}</div>`; };
   const tag={1:['green','Pronta p/ faturar'],2:['amber','Em execução'],3:['grey','Depende do cliente']};
   const inB=new Set(P.basket.map(x=>x.o));
   const show=P.list.slice(0,Math.min(P.list.length,Math.max(12,P.cut+2),25));
@@ -1415,8 +1415,8 @@ function parseMoney(t){
 const fmtK=v=>v>=1000? 'R$ '+NF.format(Math.round(v/1000))+' mil' : BRL.format(v);
 function unitOf(o){ const n=norm(o.local); return n.includes('maua')?'maua':n.includes('sbc')?'sbc':'outra'; }
 function unitLabel(u){ return u==='maua'?'Mauá':'SBC'; }
-S.goalM={valor:0,valor2:0};
-try{ const g=JSON.parse(localStorage.getItem('tabc_goal_maua')||'null'); if(g) S.goalM={valor:+g.valor>0?+g.valor:0,valor2:+g.valor2>0?+g.valor2:0}; }catch(e){}
+S.goalM={valor:300000,valor2:0};
+try{ const g=JSON.parse(localStorage.getItem('tabc_goal_maua')||'null'); if(g&&'valor' in g) S.goalM={valor:+g.valor>0?+g.valor:0,valor2:+g.valor2>0?+g.valor2:0}; }catch(e){}
 function saveGoalM(){ try{ localStorage.setItem('tabc_goal_maua',JSON.stringify(S.goalM)); }catch(e){} }
 function goalOf(u){ return u==='maua'?S.goalM:S.goal; }
 function goalCalc(u){
@@ -1470,19 +1470,19 @@ function goalCard(u){
   const z=p1/3;
   const trk=`background:linear-gradient(90deg,#F6D4D6 0 ${z}%,#FAEFC4 ${z}% ${2*z}%,#D3EBDD ${2*z}% ${p1}%,#EEF2F5 ${p1}% 100%)`;
   return `<section class="card goal ${G.st}" id="goalCard${sfx}">
-    <div class="card-h"><h2>Meta do mês · Pitstop <span class="ubadge ${u}">${UL}</span><small>Faturado em ${G.mes} em ${UL}, contra as duas metas</small></h2>
-      <div class="goal-ed"><label>Meta 1 <input id="goalV${sfx}" type="text" inputmode="numeric" value="${f(G.m1)}" aria-label="Meta 1 do mês em reais"></label>
+    <div class="card-h"><h2>Meta do mês · Pitstop <span class="ubadge ${u}">${UL}</span><small>Faturado em ${G.mes} em ${UL}, contra ${one?'a meta':'as duas metas'}</small></h2>
+      <div class="goal-ed"><label>${one?'Meta':'Meta 1'} <input id="goalV${sfx}" type="text" inputmode="numeric" value="${f(G.m1)}" aria-label="Meta 1 do mês em reais"></label>
       <label>Meta 2 <input id="goalV2${sfx}" type="text" inputmode="numeric" value="${u==='maua'&&!S.goalM.valor2?'':f(G.m2)}" placeholder="opcional" aria-label="Meta 2 do mês em reais"></label>
       ${u==='sbc'?`<label><input id="goalS" type="checkbox" ${S.goal.sab?'checked':''}> Conta sábado</label>`:''}</div></div>
     <div class="goal-top"><div class="gv"><b class="num">${f(G.real)}</b><span>${one?G.pct1+'% da meta ('+f(G.m1)+')':G.pct1+'% da meta 1 ('+f(G.m1)+') · '+G.pct2+'% da meta 2 ('+f(G.m2)+')'}</span></div>
       <span class="gst ${G.st}"><span class="dot"></span>${lab}</span></div>
     <div class="thermo"><div class="th-bulb"></div><div class="th-wrap"><div class="th-track" style="${trk}"><div class="th-ext" style="left:${p1}%"></div><div class="th-fill" style="width:${pr}%"></div></div>${mk}
       <div class="th-m1" style="left:${p1}%"></div>
-      <div class="th-scale2"><span class="a">R$ 0</span><span class="b" style="left:${p1}%">Meta 1<small>${fmtK(G.m1)}</small></span>${one?'':`<span class="c">Meta 2<small>${fmtK(G.m2)}</small></span>`}</div></div></div>
+      <div class="th-scale2"><span class="a">R$ 0</span><span class="b" style="${one?'left:auto;right:0;text-align:right':'left:'+p1+'%'}">${one?'Meta':'Meta 1'}<small>${fmtK(G.m1)}</small></span>${one?'':`<span class="c">Meta 2<small>${fmtK(G.m2)}</small></span>`}</div></div></div>
     <div class="gband ${G.st}" role="status">${G.st==='bad'?'<span class="bell">'+icon+'</span>':icon}<p>${goalText(G)}</p></div>
     <div class="gstats">
-      ${stat('Falta · meta 1',G.b1?'—':f(G.falta1),G.b1?'batida':G.pct1+'% concluído')}
-      ${stat('Por dia útil · meta 1',G.b1?'—':G.porDia1!=null?f(G.porDia1):'—',G.res+' dias úteis restantes')}
+      ${stat(one?'Falta · meta':'Falta · meta 1',G.b1?'—':f(G.falta1),G.b1?'batida':G.pct1+'% concluído')}
+      ${stat(one?'Por dia útil · meta':'Por dia útil · meta 1',G.b1?'—':G.porDia1!=null?f(G.porDia1):'—',G.res+' dias úteis restantes')}
       ${one?'':stat('Falta · meta 2',G.b2?'—':f(G.falta2),G.b2?'batida':G.pct2+'% concluído')}
       ${one?'':stat('Por dia útil · meta 2',G.b2?'—':G.porDia2!=null?f(G.porDia2):'—',G.res+' dias úteis restantes')}
       ${stat('Ritmo atual',G.media!=null?f(G.media):'—','por dia útil'+(G.ticket?' · ticket '+f(G.ticket):''))}
@@ -1607,7 +1607,7 @@ function buildPrint(){
     <div class="r"><small>Sem faturar</small><b>${BRL2.format(sum(nf))}</b></div>
     <div><small>Ciclo médio</small><b>${fmtH((()=>{const c=list.filter(o=>!o.open&&o.cycle!=null);return c.length?c.reduce((t,o)=>t+o.cycle,0)/c.length:null})())}</b></div>
   </div>
-  ${!P.sec.meta?'':['sbc','maua'].map(u=>{ const G=goalCalc(u), f=BRL2.format; if(!G.hasMeta) return `<div class="pr-goal" style="--g:#9FB0BE"><b>Meta ${G.label} (${G.mes}): faturado ${f(G.real)} · meta ainda não definida</b></div>`; const c=G.st==='ok'?'#2FA566':G.st==='warn'?'#E8B923':'#D0141B'; return `<div class="pr-goal" style="--g:${c}"><b>Meta ${G.label} (${G.mes}): ${f(G.real)} · meta 1 ${f(G.m1)} (${G.pct1}%) · meta 2 ${f(G.m2)} (${G.pct2}%)</b><div class="bar"><i style="width:${Math.min(100,pct(G.real,G.m2))}%"></i></div>${esc(goalText(G))}</div>`; }).join('')}
+  ${!P.sec.meta?'':['sbc','maua'].map(u=>{ const G=goalCalc(u), f=BRL2.format; if(!G.hasMeta) return `<div class="pr-goal" style="--g:#9FB0BE"><b>Meta ${G.label} (${G.mes}): faturado ${f(G.real)} · meta ainda não definida</b></div>`; const c=G.st==='ok'?'#2FA566':G.st==='warn'?'#E8B923':'#D0141B'; return `<div class="pr-goal" style="--g:${c}"><b>Meta ${G.label} (${G.mes}): ${f(G.real)} · ${G.m2>G.m1?'meta 1 '+f(G.m1)+' ('+G.pct1+'%) · meta 2 '+f(G.m2)+' ('+G.pct2+'%)':'meta '+f(G.m1)+' ('+G.pct1+'%)'}</b><div class="bar"><i style="width:${Math.min(100,pct(G.real,G.m2))}%"></i></div>${esc(goalText(G))}</div>`; }).join('')}
   ${!P.sec.nf?'':`<h2>Carros sem faturar <span><b>${nf.length}</b> · total <b>${BRL2.format(sum(nf))}</b></span></h2>
   ${tbl(h5,rNF,f5(nf.length,sum(nf)))}`}
   ${!P.sec.fat?'':`<h2>Carros faturados <span><b>${fat.length}</b> · total <b>${BRL2.format(sum(fat))}</b></span></h2>
