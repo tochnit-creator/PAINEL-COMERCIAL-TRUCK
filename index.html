@@ -513,6 +513,44 @@ main.enter .pmap-bar i{animation:grow .9s cubic-bezier(.2,.7,.2,1) both}
 .pl-row.in{background:#EDF7F1;box-shadow:inset 3px 0 0 #2FA566}
 .pl-cut{margin:6px 0;padding:6px 12px;border-radius:8px;border:1.5px dashed var(--red);color:var(--red-dark);font:700 12px var(--f-body);text-align:center}
 @media(max-width:720px){.pl-row{grid-template-columns:24px minmax(0,1fr) auto}.pl-row .pill{grid-column:2;justify-self:start}.pl-row .v{grid-row:1;grid-column:3}.pl-row .n{grid-row:1}}
+
+/* v9: duas metas, na mão por responsável, desistências */
+.th-ext{position:absolute;top:0;bottom:0;right:0;background:repeating-linear-gradient(135deg,#E1E8EE 0 6px,#EEF2F5 6px 12px)}
+.th-m1{position:absolute;top:14px;height:34px;width:2px;background:var(--ink);transform:translateX(-1px);border-radius:1px}
+.th-scale2{position:relative;height:30px;margin-top:6px;font-size:11.5px;color:var(--muted);line-height:1.2}
+.th-scale2 span{position:absolute;top:0;white-space:nowrap}
+.th-scale2 .a{left:0}
+.th-scale2 .b{transform:translateX(-50%);text-align:center;color:var(--ink);font-weight:700}
+.th-scale2 .c{right:0;text-align:right;font-weight:700;color:var(--ink)}
+.th-scale2 small{display:block;font-weight:500;color:var(--muted);font-size:11px}
+.rs-top{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:baseline;margin:6px 0 10px}
+.rs-top b{font:700 30px/1 var(--f-display)}
+.rs-top span{color:var(--muted);font-size:13px}
+.rs-row{display:grid;grid-template-columns:minmax(110px,170px) minmax(0,1fr) 130px;gap:4px 14px;align-items:center;padding:10px;border-radius:10px}
+.rs-row:hover{background:var(--card-2)}
+.rs-row .nm{font-weight:700}
+.rs-row .nm small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+.rs-bar{display:flex;height:12px;border-radius:6px;overflow:hidden;background:var(--ice)}
+.rs-bar i{display:block;height:100%}
+.rs-row .v{text-align:right;font:700 18px var(--f-display);letter-spacing:.01em}
+.rs-row .v small{display:block;font:500 11.5px var(--f-body);color:var(--muted);letter-spacing:0}
+.rs-sub{grid-column:2 / -1;font-size:12.5px;color:var(--muted)}
+.mt-row{display:grid;grid-template-columns:minmax(120px,240px) minmax(0,1fr) 190px;gap:4px 14px;align-items:center;padding:9px 10px;border-radius:10px}
+.mt-row:hover{background:var(--card-2)}
+.mt-row .nm{font-weight:600;overflow-wrap:anywhere}
+.mt-row .v{text-align:right;font:700 16px var(--f-display)}
+.mt-row .v small{display:block;font:500 11.5px var(--f-body);color:var(--muted)}
+.ds-row{display:grid;grid-template-columns:minmax(0,1fr) 120px;gap:2px 12px;align-items:center;padding:8px 10px;border-radius:10px}
+.ds-row:hover{background:var(--card-2)}
+.ds-row .nm{min-width:0;overflow-wrap:anywhere}
+.ds-row .nm b{letter-spacing:.03em}
+.ds-row .nm span{display:block;font-size:12.5px;color:var(--muted)}
+.ds-row .v{text-align:right;font:700 16px var(--f-display)}
+.dbar{height:10px;border-radius:5px;background:var(--ice);overflow:hidden}
+.dbar i{display:block;height:100%;background:var(--red);border-radius:5px}
+main.enter .dbar i,main.enter .rs-bar i{animation:grow .8s cubic-bezier(.2,.7,.2,1) both}
+.card-h .seg{align-self:flex-start}
+@media(max-width:720px){.rs-row{grid-template-columns:1fr auto}.rs-row .rs-bar{grid-column:1 / -1;order:3}.rs-sub{grid-column:1 / -1;order:4}.mt-row{grid-template-columns:1fr}.mt-row .v{text-align:left}}
 </style>
 
 </head>
@@ -639,11 +677,11 @@ function buildChegada(rows, now){
       if(ms>=0) steps.push({from:a,to:b,ms});
     }
     const last=present[present.length-1];
-    const open = last<6;
+    const desist=norm(r[16]).startsWith('sim'); const open = last<6 && !desist;
     out.push({
       placa:String(r[1]??'').trim(), colab:String(r[2]??'').trim(), local:String(r[3]??'').trim(),
       cliente:String(r[4]??'').trim(), os:r[6]==null||r[6]===''?'':String(r[6]).replace(/\.0$/,''),
-      fat:norm(r[7]).startsWith('sim'), resp:String(r[8]??'').trim(), valor:pn(r[9]),
+      fat:norm(r[7]).startsWith('sim'), desist, motivo:String(r[17]??'').trim(), resp:String(r[8]??'').trim(), valor:pn(r[9]),
       ts, base:ts[present[0]], steps, last, open,
       openMs: open? Math.max(0, now-ts[last]) : null,
       cycle: ts[6]&&ts[present[0]] ? ts[6]-ts[present[0]] : null
@@ -681,11 +719,11 @@ function demoChegada(now){
       }
       while(ts.length<7) ts.push(null);
       if(skipPecas&&ts[5]===null&&ts[4]&&ts[6]===null){}
-      const fin=!!ts[6];
+      const fin=!!ts[6]; const des=!fin&&(((osn+7)*2654435761)>>>0)%100<11;
       rows.push([ts[0],`${L()}${L()}${L()}${Math.floor(rnd()*10)}${L()}${Math.floor(rnd()*10)}${Math.floor(rnd()*10)}`,
         ['Tati','Julio','Fabi','Glauci'][Math.floor(rnd()*4)], rnd()<.62?'SBC':'Maua', pick(), '', osn++,
-        fin&&rnd()<.82?'Sim':'Não', rnd()<.5?'Nelson':'Guilherme', Math.round((800+rnd()*rnd()*47000)/50)*50,
-        ts[1],ts[2],ts[3],ts[4],ts[5],ts[6]]);
+        fin&&rnd()<.82?'Sim':'Não', ['Nelson','Guilherme','Zu','Aloiso','Baixada','Lobo'][Math.floor(rnd()*6)], Math.round((800+rnd()*rnd()*47000)/50)*50,
+        ts[1],ts[2],ts[3],ts[4],ts[5],ts[6], des?'sim':'não', des?['Preço alto','Fechou em outra oficina','Cliente adiou o serviço','Sem peça disponível','Preço alto'][osn%5]:'']);
     }
   }
   return rows;
@@ -727,7 +765,7 @@ async function refreshLive(auto){
     const [cl,ch]=await Promise.all([getTSV(URL_CLIENTES),getTSV(URL_CHEGADA)]);
     if(!cl.length||String(cl[0][0]).trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')!=='codigo'){ const e=new Error('abas'); e.code='abas'; throw e; }
     const clientes=cl.slice(1).filter(r=>String(r[0]).trim()!=='').map(r=>[Number(r[0]),String(r[1]||''),String(r[5]||''),String(r[4]||''),String(r[7]||'')]);
-    const chegada=ch.slice(1).map(r=>{ const o=r.slice(0,16); while(o.length<16) o.push(''); return o; }).filter(o=>o.some(x=>String(x).trim()!==''));
+    const chegada=ch.slice(1).map(r=>{ const o=r.slice(0,18); while(o.length<18) o.push(''); return o; }).filter(o=>o.some(x=>String(x).trim()!==''));
     LIVE={clientes,chegada,at:new Date()};
     if(!auto||firstLoad){ S.demo=false; $('#demoSw').checked=false; S.month='all'; S.local='all'; S.openOs=null; }
     S.liveMsg=(auto&&!firstLoad)?null:{kind:'ok',text:'Dados atualizados da planilha: '+NF.format(chegada.length)+' registros de chegada e '+NF.format(clientes.length)+' clientes.'};
@@ -745,7 +783,7 @@ function tryAuto(){ refreshLive(); }
 const S = {
   tab:'resumo', month:'all', local:'all', demo:true,
   thr:{alerta:30, proximo:60, vencido:90}, freq:{min:3, dias:90},
-  anim:true, meta:[null,null,null,null,null,null], recompra:'vencidos', sortDir:null, q:'', qOs:'', shown:{os:12, rec:40}
+  anim:true, desMode:'month', meta:[null,null,null,null,null,null], recompra:'vencidos', sortDir:null, q:'', qOs:'', shown:{os:12, rec:40}
 };
 let NOW = new Date();
 let CH = [];      // chegadas normalizadas (do modo atual)
@@ -808,7 +846,7 @@ function demoNote(){
 function viewResumo(){
   const list=osFiltered();
   const fin=list.filter(o=>!o.open), abertas=list.filter(o=>o.open);
-  const fat=list.filter(o=>o.fat), nfat=list.filter(o=>!o.fat);
+  const fat=list.filter(o=>o.fat), nfat=list.filter(o=>(!o.fat&&!o.desist));
   const sum=a=>a.reduce((t,o)=>t+o.valor,0);
   const agg=stageAgg(list);
   const maxI=agg.reduce((b,x,i)=>x.avg!=null&&(b<0||x.avg>agg[b].avg)?i:b,-1);
@@ -898,7 +936,7 @@ function osRow(o){
   const tot=segs.reduce((t,s)=>t+s.ms,0);
   const bar=tot>0? segs.map(s=>`<i class="${s.now?'now':''}" style="width:${s.ms/tot*100}%;${s.now?'':'background:'+s.c}" data-tip="${esc(s.tip)} (${pct(s.ms,tot)}%)"></i>`).join('') : '';
   const id='o'+Math.abs(hash(o.placa+o.os+o.base.getTime()));
-  const stat=o.open? `<span class="pill amber">${STAGES[o.last].replace('Aguardando ','Aguard. ').replace(' do cliente',' cliente')}</span>` : `<span class="pill green">Finalizado</span>`;
+  const stat=o.desist? `<span class="pill grey">Desistiu</span>` : o.open? `<span class="pill amber">${STAGES[o.last].replace('Aguardando ','Aguard. ').replace(' do cliente',' cliente')}</span>` : `<span class="pill green">Finalizado</span>`;
   const tottxt=o.open? o.openMs!=null? fmtH(tot) : '—' : fmtH(o.cycle);
   const det=segs.map(s=>`<div class="row"><span>${s.now?'<b>Parada agora</b>':esc(s.tip.split(':')[0])}</span><div class="mini"><i style="width:${pct(s.ms,tot)}%;${s.now?'background:var(--red)':'background:'+s.c}"></i></div><span class="num" style="text-align:right">${fmtDur(s.ms)} · ${pct(s.ms,tot)}%</span></div>`).join('');
   return `<div class="os ${S.openOs===id?'open':''}" data-id="${id}">
@@ -915,7 +953,7 @@ function hash(s){let h=0;for(let i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))|0}
 
 function viewFatura(){
   const list=osFiltered();
-  const fat=list.filter(o=>o.fat), nfat=list.filter(o=>!o.fat);
+  const fat=list.filter(o=>o.fat), nfat=list.filter(o=>(!o.fat&&!o.desist));
   const sum=a=>a.reduce((t,o)=>t+o.valor,0);
   const tv=sum(list), fv=sum(fat), nv=sum(nfat);
   const mode=S.fatMode||'nfat';
@@ -1120,7 +1158,7 @@ function esfriando(){
 }
 function buildResumo(){
   const list=osFiltered(), fin=list.filter(o=>!o.open), ab=list.filter(o=>o.open);
-  const fat=list.filter(o=>o.fat), nf=list.filter(o=>!o.fat);
+  const fat=list.filter(o=>o.fat), nf=list.filter(o=>(!o.fat&&!o.desist));
   const sum=a=>a.reduce((t,o)=>t+o.valor,0), agg=stageAgg(list);
   const cyc=fin.filter(o=>o.cycle!=null), cA=cyc.length? cyc.reduce((t,o)=>t+o.cycle,0)/cyc.length : null;
   const maxI=agg.reduce((b,x,i)=>x.avg!=null&&(b<0||x.avg>agg[b].avg)?i:b,-1);
@@ -1133,7 +1171,9 @@ function buildResumo(){
     'Ciclo médio: '+fmtH(cA),
     `Faturado: ${BRL.format(sum(fat))} (${fat.length} OS)`,
     `Ainda não faturado: ${BRL.format(sum(nf))} (${nf.length} OS)`];
-  { const G=goalCalc(); L.push(`Meta do mês: ${BRL.format(G.real)} de ${BRL.format(G.meta)} (${G.pctReal}%)`+(G.batida?' · meta batida':` · faltam ${BRL.format(G.falta)}`+(G.porDia!=null?` · ${BRL.format(G.porDia)} por dia útil (restam ${G.res})`:''))); }
+  { const G=goalCalc(), f=BRL.format, d=desistInfo('month');
+    L.push(`Meta 1 (${f(G.m1)}): ${G.pct1}% · ${G.b1?'batida':'faltam '+f(G.falta1)+(G.porDia1!=null?' · '+f(G.porDia1)+' por dia útil (restam '+G.res+')':'')}`, `Meta 2 (${f(G.m2)}): ${G.pct2}% · ${G.b2?'batida':'faltam '+f(G.falta2)+(G.porDia2!=null?' · '+f(G.porDia2)+' por dia útil':'')}`);
+    if(d.n) L.push(`Desistências do mês: ${d.n} (${d.pctOS}% das OS)${d.valor>0?' · '+f(d.valor):''} · principal motivo: ${d.top}`); }
   if(maxI>=0) L.push(`Maior espera: ${STEPS[maxI].n} (média ${fmtH(agg[maxI].avg)})`);
   L.push('', `OS paradas acima ${S.meta.some(x=>x>0)?'da meta':'do normal'}: ${late.length}`);
   late.slice(0,3).forEach(o=>L.push(`- ${o.placa||'sem placa'} (${titleCase(o.cliente)||'sem cliente'}): ${fmtH(o.openMs)} em ${STAGES[o.last].toLowerCase()}`));
@@ -1194,9 +1234,9 @@ function startAutoRefresh(){
 const PL_ACAO=['Confirmar entrada','Cobrar o orçamento','Fechar o orçamento','Ligar para o cliente','Acompanhar a execução','Cobrar a chegada das peças'];
 function planCalc(G){
   const k=monthKey(NOW);
-  const open=CH.filter(o=>!o.fat&&monthKey(o.base)===k);
+  const open=CH.filter(o=>(!o.fat&&!o.desist)&&monthKey(o.base)===k);
   const nf=open.filter(o=>o.valor>0), semValor=open.length-nf.length;
-  const old=CH.filter(o=>!o.fat&&monthKey(o.base)!==k&&o.valor>0);
+  const old=CH.filter(o=>(!o.fat&&!o.desist)&&monthKey(o.base)!==k&&o.valor>0);
   const tier=o=>!o.open?1:(o.last>=4?2:3);
   const list=nf.map(o=>({o,t:tier(o)})).sort((a,b)=>a.t-b.t||b.o.valor-a.o.valor);
   let acc=0; list.forEach(x=>{ acc+=x.o.valor; x.acc=acc; });
@@ -1207,11 +1247,11 @@ function planCalc(G){
   return {list,tot,cnt,dayGoal,basket,bs,cut,total:acc,semValor,old,oldSum:old.reduce((t,o)=>t+o.valor,0)};
 }
 function planCard(){
-  const G=goalCalc(), P=planCalc(G), M=G.meta;
+  const G=goalCalc(), P=planCalc(G), M=G.meta, M1=G.m1, M2=G.m2;
   const base=G.real, c1=base+P.tot[1], c2=c1+P.tot[2], c3=c2+P.tot[3];
-  const sc=Math.max(M,c3,1), w=v=>(v/sc*100).toFixed(2)+'%', mp=M/sc*100;
+  const sc=Math.max(M2,c3,1), w=v=>(v/sc*100).toFixed(2)+'%', mp1=M1/sc*100, mp2=M2/sc*100;
   const p=v=>pct(v,M)+'%';
-  const tierCard=(t,l,sub)=>`<div class="tier t${t}"><small>${l}</small><b class="num">${BRL.format(P.tot[t])}</b><span>${P.cnt[t]} OS · ${sub}${P.cnt[t]?' → '+p(t===1?c1:t===2?c2:c3)+' da meta':''}</span></div>`;
+  const tierCard=(t,l,sub)=>{ const c=t===1?c1:t===2?c2:c3; return `<div class="tier t${t}"><small>${l}</small><b class="num">${BRL.format(P.tot[t])}</b><span>${P.cnt[t]} OS · ${sub}</span>${P.cnt[t]?`<span>Chega a ${pct(c,M1)}% da meta 1 · ${pct(c,M2)}% da meta 2</span>`:''}</div>`; };
   const tag={1:['green','Pronta p/ faturar'],2:['amber','Em execução'],3:['grey','Depende do cliente']};
   const inB=new Set(P.basket.map(x=>x.o));
   const show=P.list.slice(0,Math.min(P.list.length,Math.max(12,P.cut+2),25));
@@ -1221,33 +1261,34 @@ function planCard(){
     return `<div class="pl-row ${inB.has(o)?'in':''}"><span class="n">${i+1}</span>
       <div class="nm"><b>${esc(o.placa||'—')}</b> · ${esc(titleCase(o.cliente)||'Sem cliente')}<span>${acao}${inB.has(o)?' · cesta de hoje':''}</span></div>
       <span class="pill ${tag[x.t][0]}">${tag[x.t][1]}</span>
-      <div class="v num">${BRL.format(o.valor)}<small>acumulado ${BRL.format(x.acc)}</small></div></div>${i===P.cut?`<div class="pl-cut">Faturando até aqui (${BRL.format(x.acc)}), a meta do mês é atingida</div>`:''}`;
+      <div class="v num">${BRL.format(o.valor)}<small>acumulado ${BRL.format(x.acc)}</small></div></div>${i===P.cut?`<div class="pl-cut">Faturando até aqui (${BRL.format(x.acc)}), a ${G.nome} é atingida</div>`:''}`;
   }).join('');
   let msg;
   if(!P.list.length) msg='Não há OS sem faturar com valor preenchido neste mês.';
-  else if(G.batida) msg=`A meta do mês já foi batida. Faturar as OS prontas (${BRL.format(P.tot[1])}) ainda melhora o caixa.`;
+  else if(G.batida) msg=`As duas metas do mês já foram batidas. Faturar as OS prontas (${BRL.format(P.tot[1])}) ainda melhora o caixa.`;
   else {
     const pl=P.basket.slice(0,5).map(x=>x.o.placa||'sem placa').join(', ')+(P.basket.length>5?' +'+(P.basket.length-5):'');
     const ready=P.basket.filter(x=>x.t===1).length;
-    msg=`Cesta sugerida para hoje: ${pl} somam ${BRL.format(P.bs)}${P.bs>=P.dayGoal?', cobrindo a meta do dia de '+BRL.format(P.dayGoal):', ainda abaixo da meta do dia de '+BRL.format(P.dayGoal)}. ${ready} já ${ready===1?'está finalizada':'estão finalizadas'} e só ${ready===1?'precisa':'precisam'} de nota; as outras dependem de concluir o serviço.`;
-    msg+= c3>=M? ` Para fechar o mês, seria preciso faturar as ${P.cut+1} primeiras da fila (${BRL.format(P.list[P.cut].acc)}).` : ` Atenção: mesmo faturando todas as pendentes o mês fecha em ${p(c3)} da meta. Para chegar lá é preciso entrar mais OS.`;
+    msg=`Cesta sugerida para hoje (${G.nome}): ${pl} somam ${BRL.format(P.bs)}${P.bs>=P.dayGoal?', cobrindo a meta do dia de '+BRL.format(P.dayGoal):', ainda abaixo da meta do dia de '+BRL.format(P.dayGoal)}. ${ready} já ${ready===1?'está finalizada':'estão finalizadas'} e só ${ready===1?'precisa':'precisam'} de nota; as outras dependem de concluir o serviço.`;
+    msg+= c3>=M ? ` Para chegar à ${G.nome}, seria preciso faturar as ${P.cut+1} primeiras da fila (${BRL.format(P.list[P.cut].acc)}).` : ` Atenção: mesmo faturando todas as pendentes o mês fecha em ${p(c3)} da ${G.nome}. Para chegar lá é preciso entrar mais OS.`;
   }
   const cls=G.batida||(!P.list.length)?'ok':(c3<M?'bad':'warn');
   return `<section class="card plan" id="planCard">
     <div class="card-h"><h2>Plano de faturamento<small>Quais OS sem faturar do mês atacar primeiro, da mais pronta para a mais distante</small></h2></div>
     <div class="pmap"><div class="pmap-bar"><i class="s0" style="width:${w(base)}"></i><i class="s1" style="width:${w(P.tot[1])}"></i><i class="s2" style="width:${w(P.tot[2])}"></i><i class="s3" style="width:${w(P.tot[3])}"></i></div>
-      <div class="pmap-meta ${mp>88?'r':''}" style="left:${mp}%"><span>meta ${BRL.format(M)}</span></div></div>
-    <div class="pleg"><span><b style="background:var(--ink)"></b>Já faturado ${BRL.format(base)} (${p(base)})</span><span><b style="background:#2FA566"></b>Prontas</span><span><b style="background:#E8B923"></b>Em execução</span><span><b style="background:#C3CED7"></b>Dependem do cliente</span></div>
+      <div class="pmap-meta" style="left:${mp1}%"><span>meta 1 · ${BRL.format(M1)}</span></div>
+      ${M2>M1?`<div class="pmap-meta ${mp2>88?'r':''}" style="left:${mp2}%;background:var(--ink)"><span style="color:var(--ink)">meta 2 · ${BRL.format(M2)}</span></div>`:''}</div>
+    <div class="pleg"><span><b style="background:var(--ink)"></b>Já faturado ${BRL.format(base)} (${pct(base,M1)}% da meta 1)</span><span><b style="background:#2FA566"></b>Prontas</span><span><b style="background:#E8B923"></b>Em execução</span><span><b style="background:#C3CED7"></b>Dependem do cliente</span></div>
     <div class="tiers">${tierCard(1,'1 · Prontas para faturar','finalizadas')}${tierCard(2,'2 · Em execução','autorizadas ou aguardando peças')}${tierCard(3,'3 · Dependem do cliente','orçamento ou aprovação')}</div>
     <div class="gband ${cls}" role="status"><p>${msg}</p></div>
     <div class="pl-list">${rows||''}</div>
-    <p class="note">${P.old.length?`Fora do mês: ${P.old.length} OS de meses anteriores sem faturar (${BRL.format(P.oldSum)}) não entram na meta deste mês, mas valem caixa. `:''}${P.semValor?`${P.semValor} OS do mês estão sem valor preenchido e ficam fora desta conta. `:''}A fila ordena prioridade pela etapa da OS, não prevê quando o cliente paga. Só se fatura o que foi executado e entregue: o plano ajuda a não esquecer OS prontas, e não serve para antecipar nota.</p>
+    <p class="note">${P.old.length?`Fora do mês: ${P.old.length} OS de meses anteriores sem faturar (${BRL.format(P.oldSum)}) não entram na meta deste mês, mas valem caixa. `:''}${P.semValor?`${P.semValor} OS do mês estão sem valor preenchido e ficam fora desta conta. `:''}OS marcadas como desistência não entram na fila. A fila ordena prioridade pela etapa da OS, não prevê quando o cliente paga. Só se fatura o que foi executado e entregue: o plano ajuda a não esquecer OS prontas, e não serve para antecipar nota.</p>
   </section>`;
 }
 
 /* ============ META DO MÊS (PITSTOP) ============ */
-S.goal={valor:500000,sab:false};
-try{ const g=JSON.parse(localStorage.getItem('tabc_goal')||'null'); if(g&&g.valor>0) S.goal={valor:+g.valor,sab:!!g.sab}; }catch(e){}
+S.goal={valor:500000,valor2:700000,sab:false};
+try{ const g=JSON.parse(localStorage.getItem('tabc_goal')||'null'); if(g&&g.valor>0) S.goal={valor:+g.valor,valor2:(+g.valor2>0?+g.valor2:700000),sab:!!g.sab}; }catch(e){}
 function saveGoal(){ try{ localStorage.setItem('tabc_goal',JSON.stringify(S.goal)); }catch(e){} }
 function parseMoney(t){
   let s=String(t).toLowerCase().replace(/r\$|\s/g,''), mul=1;
@@ -1255,53 +1296,141 @@ function parseMoney(t){
   s=/,\d{1,2}$/.test(s)? s.replace(/\./g,'').replace(',','.') : s.replace(/[.,]/g,'');
   const n=parseFloat(s); return isNaN(n)?0:n*mul;
 }
+const fmtK=v=>v>=1000? 'R$ '+NF.format(Math.round(v/1000))+' mil' : BRL.format(v);
 function goalCalc(){
   const y=NOW.getFullYear(), m=NOW.getMonth(), last=new Date(y,m+1,0).getDate(), hoje=NOW.getDate();
   const maxW=S.goal.sab?6:5; let tot=0,pas=0,res=0;
   for(let d=1;d<=last;d++){ const w=new Date(y,m,d).getDay(); if(w<1||w>maxW) continue; tot++; if(d<hoje) pas++; else res++; }
-  const k=monthKey(NOW), inM=CH.filter(o=>monthKey(o.base)===k);
-  const fat=inM.filter(o=>o.fat), nf=inM.filter(o=>!o.fat);
+  const k=monthKey(NOW), inM=CH.filter(o=>monthKey(o.base)===k&&!o.desist);
+  const fat=inM.filter(o=>o.fat), nf=inM.filter(o=>(!o.fat&&!o.desist));
   const sum=a=>a.reduce((t,o)=>t+o.valor,0);
-  const meta=S.goal.valor, real=sum(fat), pend=sum(nf), falta=Math.max(0,meta-real);
-  const esperado=tot? meta*pas/tot : 0, ratio=esperado>0? real/esperado : 1;
-  const st = real>=meta||ratio>=1 ? 'ok' : ratio>=0.8 ? 'warn' : 'bad';
+  const m1=S.goal.valor, m2=Math.max(S.goal.valor2,m1), real=sum(fat), pend=sum(nf);
+  const b1=real>=m1, b2=real>=m2, alvo=b1?m2:m1;
+  const falta1=Math.max(0,m1-real), falta2=Math.max(0,m2-real), falta=Math.max(0,alvo-real);
+  const pd=f=>res>0? f/res : null;
+  const esperado=tot? alvo*pas/tot : 0, ratio=esperado>0? real/esperado : 1;
+  let st = ratio>=1 ? 'ok' : ratio>=0.8 ? 'warn' : 'bad';
+  if(b1&&st==='bad') st='warn';
+  if(b2) st='ok';
   const media=pas>0? real/pas : null, proj=media!=null? media*tot : null, ticket=fat.length? real/fat.length : null;
-  const porDia=res>0? falta/res : null;
-  return {meta,real,pend,pendN:nf.length,falta,tot,pas,res,esperado,st,media,proj,ticket,porDia,fatN:fat.length,batida:real>=meta,
-    pctReal:pct(real,meta), pctEsp:meta>0? esperado/meta*100 : 0, mes:monthLabel(k)};
+  return {meta:alvo,m1,m2,b1,b2,nome:b1?'meta 2':'meta 1',real,pend,pendN:nf.length,falta,falta1,falta2,tot,pas,res,esperado,st,media,proj,ticket,
+    porDia:pd(falta),porDia1:pd(falta1),porDia2:pd(falta2),fatN:fat.length,batida:b2,
+    pctReal:pct(real,alvo),pct1:pct(real,m1),pct2:pct(real,m2),pctEsp:alvo>0? esperado/alvo*100 : 0,mes:monthLabel(k)};
 }
 function goalText(G){
-  if(G.batida) return `Meta batida! O Pitstop já faturou ${BRL.format(G.real)}, ${BRL.format(G.real-G.meta)} acima da meta de ${BRL.format(G.meta)}.`;
-  let t=`Para bater a meta do Pitstop faltam ${BRL.format(G.falta)}`;
+  const f=BRL.format;
+  if(G.b2) return `Meta 2 batida! O Pitstop já faturou ${f(G.real)}, ${f(G.real-G.m2)} acima dos ${f(G.m2)}.`;
+  if(G.b1){
+    let t=`Meta 1 (${f(G.m1)}) batida! Para a meta 2 (${f(G.m2)}) faltam ${f(G.falta2)}`;
+    t+= G.res>0? `: é preciso faturar ${f(G.porDia2)} por dia útil (restam ${G.res}).`+(G.media!=null?` Hoje a média é ${f(G.media)} por dia útil.`:'') : '. Não restam dias úteis neste mês.';
+    return t;
+  }
+  let t=`Para bater a meta 1 (${f(G.m1)}) do Pitstop faltam ${f(G.falta1)}`;
   if(G.res>0){
-    t+=`: é preciso faturar ${BRL.format(G.porDia)} por dia útil (restam ${G.res}).`;
-    if(G.media!=null) t+=` Hoje a média é ${BRL.format(G.media)} por dia útil.`;
-    if(G.ticket) t+=` Isso equivale a cerca de ${(G.porDia/G.ticket).toFixed(1).replace('.',',')} OS por dia no ticket médio de ${BRL.format(G.ticket)}.`;
+    t+=`: é preciso faturar ${f(G.porDia1)} por dia útil (restam ${G.res}).`;
+    if(G.media!=null) t+=` Hoje a média é ${f(G.media)} por dia útil.`;
+    if(G.ticket) t+=` Isso equivale a cerca de ${(G.porDia1/G.ticket).toFixed(1).replace('.',',')} OS por dia no ticket médio de ${f(G.ticket)}.`;
+    t+=` Para a meta 2 (${f(G.m2)}) faltam ${f(G.falta2)}, ou ${f(G.porDia2)} por dia útil.`;
   } else t+='. Não restam dias úteis neste mês.';
   return t;
 }
 function goalCard(){
-  const G=goalCalc(), pr=Math.min(100,G.pctReal), pe=Math.min(100,G.pctEsp);
-  const lab=G.batida?'Meta batida':G.st==='ok'?'No ritmo':G.st==='warn'?'Quase no ritmo':'Abaixo do ritmo';
+  const G=goalCalc(), sc=G.m2, f=BRL.format;
+  const pr=Math.min(100,G.real/sc*100), p1=G.m1/sc*100, pe=Math.min(100,G.esperado/sc*100);
+  const lab=G.b2?'Meta 2 batida':G.b1?(G.st==='ok'?'Meta 1 batida · meta 2 no ritmo':'Meta 1 batida · meta 2 abaixo do ritmo'):G.st==='ok'?'No ritmo':G.st==='warn'?'Quase no ritmo':'Abaixo do ritmo';
   const icon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>';
-  const mk=G.esperado>0&&!G.batida? `<div class="th-mark ${pe<14?'l':pe>86?'r':''}" style="left:${pe}%"><span>ritmo de hoje · ${BRL.format(G.esperado)}</span></div>` : '';
+  const mk=G.esperado>0&&!G.b2? `<div class="th-mark ${pe<14?'l':pe>86?'r':''}" style="left:${pe}%"><span>ritmo de hoje · ${f(G.esperado)}</span></div>` : '';
   const stat=(l,v,s)=>`<div><small>${l}</small><b class="num">${v}</b><span>${s}</span></div>`;
+  const z=p1/3;
+  const trk=`background:linear-gradient(90deg,#F6D4D6 0 ${z}%,#FAEFC4 ${z}% ${2*z}%,#D3EBDD ${2*z}% ${p1}%,#EEF2F5 ${p1}% 100%)`;
   return `<section class="card goal ${G.st}" id="goalCard">
-    <div class="card-h"><h2>Meta do mês · Pitstop<small>Faturado em ${G.mes} contra a meta</small></h2>
-      <div class="goal-ed"><label>Meta <input id="goalV" type="text" inputmode="numeric" value="${BRL.format(G.meta)}" aria-label="Meta do mês em reais"></label>
+    <div class="card-h"><h2>Meta do mês · Pitstop<small>Faturado em ${G.mes} contra as duas metas</small></h2>
+      <div class="goal-ed"><label>Meta 1 <input id="goalV" type="text" inputmode="numeric" value="${f(G.m1)}" aria-label="Meta 1 do mês em reais"></label>
+      <label>Meta 2 <input id="goalV2" type="text" inputmode="numeric" value="${f(G.m2)}" aria-label="Meta 2 do mês em reais"></label>
       <label><input id="goalS" type="checkbox" ${S.goal.sab?'checked':''}> Conta sábado</label></div></div>
-    <div class="goal-top"><div class="gv"><b class="num">${BRL.format(G.real)}</b><span>de ${BRL.format(G.meta)} · ${G.pctReal}% da meta</span></div>
+    <div class="goal-top"><div class="gv"><b class="num">${f(G.real)}</b><span>${G.pct1}% da meta 1 (${f(G.m1)}) · ${G.pct2}% da meta 2 (${f(G.m2)})</span></div>
       <span class="gst ${G.st}"><span class="dot"></span>${lab}</span></div>
-    <div class="thermo"><div class="th-bulb"></div><div class="th-wrap"><div class="th-track"><div class="th-fill" style="width:${pr}%"></div></div>${mk}
-      <div class="th-scale"><span>R$ 0</span><span>${BRL.format(G.meta/4)}</span><span>${BRL.format(G.meta/2)}</span><span>${BRL.format(G.meta*3/4)}</span><span>${BRL.format(G.meta)}</span></div></div></div>
+    <div class="thermo"><div class="th-bulb"></div><div class="th-wrap"><div class="th-track" style="${trk}"><div class="th-ext" style="left:${p1}%"></div><div class="th-fill" style="width:${pr}%"></div></div>${mk}
+      <div class="th-m1" style="left:${p1}%"></div>
+      <div class="th-scale2"><span class="a">R$ 0</span><span class="b" style="left:${p1}%">Meta 1<small>${fmtK(G.m1)}</small></span><span class="c">Meta 2<small>${fmtK(G.m2)}</small></span></div></div></div>
     <div class="gband ${G.st}" role="status">${G.st==='bad'?'<span class="bell">'+icon+'</span>':icon}<p>${goalText(G)}</p></div>
     <div class="gstats">
-      ${stat('Falta para a meta',BRL.format(G.falta),G.batida?'meta atingida':G.pctReal+'% concluído')}
-      ${stat('Precisa por dia útil',G.batida?'—':G.porDia!=null?BRL.format(G.porDia):'—',G.res+' dias úteis restantes')}
-      ${stat('Ritmo atual',G.media!=null?BRL.format(G.media):'—','por dia útil'+(G.ticket?' · ticket '+BRL.format(G.ticket):''))}
-      ${stat('Projeção do mês',G.proj!=null?BRL.format(G.proj):'—',G.proj!=null?pct(G.proj,G.meta)+'% da meta':'sem dias fechados')}
+      ${stat('Falta · meta 1',G.b1?'—':f(G.falta1),G.b1?'batida':G.pct1+'% concluído')}
+      ${stat('Por dia útil · meta 1',G.b1?'—':G.porDia1!=null?f(G.porDia1):'—',G.res+' dias úteis restantes')}
+      ${stat('Falta · meta 2',G.b2?'—':f(G.falta2),G.b2?'batida':G.pct2+'% concluído')}
+      ${stat('Por dia útil · meta 2',G.b2?'—':G.porDia2!=null?f(G.porDia2):'—',G.res+' dias úteis restantes')}
+      ${stat('Ritmo atual',G.media!=null?f(G.media):'—','por dia útil'+(G.ticket?' · ticket '+f(G.ticket):''))}
+      ${stat('Projeção do mês',G.proj!=null?f(G.proj):'—',G.proj!=null?pct(G.proj,G.m1)+'% da meta 1 · '+pct(G.proj,G.m2)+'% da meta 2':'sem dias fechados')}
     </div>
-    <p class="note">Ainda sem faturar neste mês: ${BRL.format(G.pend)} (${G.pendN} OS)${G.pend>0&&!G.batida?' — se tudo for faturado, chega a '+pct(G.real+G.pend,G.meta)+'% da meta':''}. Conta dias úteis de segunda a ${S.goal.sab?'sábado':'sexta'}; feriados não são descontados. A meta fica salva neste navegador.</p>
+    <p class="note">Ainda sem faturar neste mês: ${f(G.pend)} (${G.pendN} OS)${G.pend>0&&!G.b2?' — se tudo for faturado, chega a '+pct(G.real+G.pend,G.m1)+'% da meta 1 e '+pct(G.real+G.pend,G.m2)+'% da meta 2':''}. OS com desistência não entram. Conta dias úteis de segunda a ${S.goal.sab?'sábado':'sexta'}; feriados não são descontados. As metas ficam salvas neste navegador.</p>
+  </section>`;
+}
+
+/* ============ NA MÃO DE CADA RESPONSÁVEL ============ */
+function resCard(){
+  const g=new Map();
+  for(const o of CH){
+    if(o.desist) continue;
+    const andamento=o.open, finSem=!o.open&&(!o.fat&&!o.desist);
+    if(!andamento&&!finSem) continue;
+    const k=o.resp||'Sem responsável';
+    const e=g.get(k)||{a:0,av:0,f:0,fv:0,sv:0};
+    if(andamento){ e.a++; e.av+=o.valor; } else { e.f++; e.fv+=o.valor; }
+    if(!(o.valor>0)) e.sv++;
+    g.set(k,e);
+  }
+  const rows=[...g.entries()].map(([k,e])=>({k,...e,t:e.av+e.fv,n:e.a+e.f})).sort((a,b)=>b.t-a.t||b.n-a.n);
+  const mx=Math.max(1,...rows.map(r=>r.t)), tot=rows.reduce((t,r)=>t+r.t,0), n=rows.reduce((t,r)=>t+r.n,0), sv=rows.reduce((t,r)=>t+r.sv,0);
+  const body=rows.length? rows.map(r=>`<div class="rs-row"><div class="nm">${esc(r.k)}<small>${r.n} OS</small></div>
+    <div class="rs-bar" data-tip="Em andamento ${BRL.format(r.av)} · finalizadas sem faturar ${BRL.format(r.fv)}"><i style="width:${r.av/mx*100}%;background:var(--ink)"></i><i style="width:${r.fv/mx*100}%;background:#2FA566"></i></div>
+    <div class="v num">${BRL.format(r.t)}</div>
+    <div class="rs-sub">${r.a} em andamento (${BRL.format(r.av)}) · ${r.f} finalizadas sem faturar (${BRL.format(r.fv)})${r.sv?' · '+r.sv+' sem valor preenchido':''}</div></div>`).join('') : empty('Nenhuma OS em andamento ou sem faturar com responsável definido.');
+  return `<section class="card" id="resCard">
+    <div class="card-h"><h2>Valor na mão de cada responsável<small>OS em andamento e finalizadas ainda sem faturar</small></h2></div>
+    <div class="rs-top"><b class="num">${BRL.format(tot)}</b><span>no total, em ${n} OS${sv?' · '+sv+' sem valor preenchido':''}</span></div>
+    <div class="pleg" style="margin:0 0 6px"><span><b style="background:var(--ink)"></b>Em andamento</span><span><b style="background:#2FA566"></b>Finalizadas sem faturar</span></div>
+    ${body}
+    <p class="note">"Na mão" é o que o responsável ainda precisa levar até a nota. OS sem valor preenchido contam como R$ 0, então o total pode estar abaixo do real. Desistências ficam de fora.</p>
+  </section>`;
+}
+
+/* ============ DESISTÊNCIAS ============ */
+function desistInfo(mode){
+  mode=mode||S.desMode;
+  const k=monthKey(NOW), all=CH.filter(o=>mode==='all'||monthKey(o.base)===k), des=all.filter(o=>o.desist);
+  const sum=a=>a.reduce((t,o)=>t+o.valor,0);
+  const mm=new Map();
+  for(const o of des){
+    const raw=String(o.motivo||'').trim(), key=raw?norm(raw):'(sem motivo)';
+    const e=mm.get(key)||{label:raw?raw.charAt(0).toUpperCase()+raw.slice(1):'Sem motivo informado',n:0,v:0};
+    e.n++; e.v+=o.valor; mm.set(key,e);
+  }
+  const motivos=[...mm.values()].sort((a,b)=>b.n-a.n||b.v-a.v);
+  return {all,des,n:des.length,clients:new Set(des.map(o=>norm(o.cliente))).size,tot:all.length,valor:sum(des),valAll:sum(all),
+    pctOS:pct(des.length,all.length),pctVal:pct(sum(des),sum(all)),motivos,top:motivos[0]?motivos[0].label:'—',semValor:des.filter(o=>!(o.valor>0)).length};
+}
+function desCard(){
+  const D=desistInfo(), G=goalCalc(), f=BRL.format, mes=D.n&&S.desMode==='all'?'todos os meses':monthLabel(monthKey(NOW));
+  const seg=`<div class="seg" role="group" aria-label="Período"><button data-act="desMode" data-v="month" aria-pressed="${S.desMode==='month'}">Mês atual</button><button data-act="desMode" data-v="all" aria-pressed="${S.desMode==='all'}">Todos os meses</button></div>`;
+  const head=`<div class="card-h"><div><h2>Desistências<small>Clientes que não fecharam o pedido (coluna Q = sim) e o motivo (coluna R)</small></h2></div>${seg}</div>`;
+  if(!D.n) return `<section class="card" id="desCard">${head}${empty('Nenhuma desistência marcada '+(S.desMode==='all'?'na planilha':'em '+monthLabel(monthKey(NOW)))+'. Quando a coluna Q de uma OS estiver como "sim", ela aparece aqui com o motivo da coluna R.')}</section>`;
+  const mx=Math.max(1,...D.motivos.map(m=>m.n));
+  const stat=(l,v,s)=>`<div><small>${l}</small><b class="num">${v}</b><span>${s}</span></div>`;
+  const rows=D.motivos.map(m=>`<div class="mt-row"><div class="nm">${esc(m.label)}</div><div class="dbar"><i style="width:${m.n/mx*100}%"></i></div>
+    <div class="v num">${m.n} · ${pct(m.n,D.n)}%<small>${f(m.v)}</small></div></div>`).join('');
+  const lst=D.des.slice().sort((a,b)=>b.valor-a.valor||b.base-a.base).slice(0,10).map(o=>`<div class="ds-row"><div class="nm"><b>${esc(o.placa||'—')}</b> · ${esc(titleCase(o.cliente)||'Sem cliente')}<span>${esc(o.motivo||'Sem motivo informado')} · ${esc(o.resp||'sem responsável')} · ${fmtDate(o.base)}</span></div><div class="v num">${o.valor>0?f(o.valor):'—'}</div></div>`).join('');
+  return `<section class="card" id="desCard">${head}
+    <div class="gband bad" style="animation:none"><p><b>${D.n} ${D.n===1?'cliente desistiu':'clientes desistiram'}</b> (${mes}), ${D.n===1?'o que representa':'o que representa'} ${D.pctOS}% das ${D.tot} OS do período${D.valor>0?` e ${f(D.valor)} que deixaram de entrar`:''}. Principal motivo: <b>${esc(D.top)}</b> (${pct(D.motivos[0].n,D.n)}% das desistências).</p></div>
+    <div class="gstats">
+      ${stat('Desistências',D.n,D.clients+' '+(D.clients===1?'cliente diferente':'clientes diferentes'))}
+      ${stat('% das OS do período',D.pctOS+'%',D.n+' de '+D.tot+' OS')}
+      ${stat('Valor que deixou de entrar',f(D.valor),D.pctVal+'% do valor das OS'+(S.desMode==='month'?' · '+pct(D.valor,G.m1)+'% da meta 1':''))}
+    </div>
+    <h2 style="margin:16px 0 4px;font-size:15px">Motivos</h2>
+    <div>${rows}</div>
+    <h2 style="margin:16px 0 4px;font-size:15px">Maiores desistências</h2>
+    <div>${lst}</div>
+    <p class="note">${D.semValor?D.semValor+' desistência'+(D.semValor===1?' está':'s estão')+' sem valor preenchido e contam como R$ 0. ':''}Os motivos vêm do texto da coluna R: textos iguais (sem diferença de maiúscula ou acento) são agrupados. Para o agrupamento ficar melhor, vale criar uma lista suspensa de motivos nessa coluna.</p>
   </section>`;
 }
 
@@ -1310,7 +1439,7 @@ const BRL2=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
 function buildPrint(){
   const list=osFiltered(), agg=stageAgg(list);
   const sum=a=>a.reduce((t,o)=>t+o.valor,0);
-  const fat=list.filter(o=>o.fat).sort((a,b)=>b.valor-a.valor), nf=list.filter(o=>!o.fat).sort((a,b)=>b.valor-a.valor);
+  const fat=list.filter(o=>o.fat).sort((a,b)=>b.valor-a.valor), nf=list.filter(o=>(!o.fat&&!o.desist)).sort((a,b)=>b.valor-a.valor);
   const ab=list.filter(o=>o.open).sort((a,b)=>b.openMs-a.openMs);
   const un=S.local==='all'?'todas as unidades':((CH.find(o=>norm(o.local)===S.local)||{}).local||S.local);
   const per=S.month==='all'?'todos os meses':monthLabel(S.month);
@@ -1331,19 +1460,20 @@ function buildPrint(){
     <div class="r"><small>Sem faturar</small><b>${BRL2.format(sum(nf))}</b></div>
     <div><small>Ciclo médio</small><b>${fmtH((()=>{const c=list.filter(o=>!o.open&&o.cycle!=null);return c.length?c.reduce((t,o)=>t+o.cycle,0)/c.length:null})())}</b></div>
   </div>
-  ${(()=>{ const G=goalCalc(), c=G.st==='ok'?'#2FA566':G.st==='warn'?'#E8B923':'#D0141B'; return `<div class="pr-goal" style="--g:${c}"><b>Meta do mês (${G.mes}): ${BRL2.format(G.real)} de ${BRL2.format(G.meta)} · ${G.pctReal}%</b><div class="bar"><i style="width:${Math.min(100,G.pctReal)}%"></i></div>${esc(goalText(G))}</div>`; })()}
+  ${(()=>{ const G=goalCalc(), f=BRL2.format, c=G.st==='ok'?'#2FA566':G.st==='warn'?'#E8B923':'#D0141B'; return `<div class="pr-goal" style="--g:${c}"><b>Meta do mês (${G.mes}): ${f(G.real)} · meta 1 ${f(G.m1)} (${G.pct1}%) · meta 2 ${f(G.m2)} (${G.pct2}%)</b><div class="bar"><i style="width:${Math.min(100,pct(G.real,G.m2))}%"></i></div>${esc(goalText(G))}</div>`; })()}
   <h2>Carros sem faturar <span><b>${nf.length}</b> · total <b>${BRL2.format(sum(nf))}</b></span></h2>
   ${tbl(h5,rNF,f5(nf.length,sum(nf)))}
   <h2>Carros faturados <span><b>${fat.length}</b> · total <b>${BRL2.format(sum(fat))}</b></span></h2>
   ${tbl(h5,rF,f5(fat.length,sum(fat)))}
   <h2>Status dos carros em processo <span><b>${ab.length}</b> ${ab.length===1?'carro':'carros'} agora</span></h2>
   ${tbl('<th>Placa</th><th>Cliente</th><th>Etapa atual</th><th>Entrada</th><th class="n">Parado há</th><th>Responsável</th><th>Prazo</th>',rAB,'<tr><td colspan="7">'+ab.filter(o=>isLate(o,agg)).length+' atrasados · '+(S.meta.some(x=>x>0)?'critério: metas por etapa':'critério: 1,5× a média da etapa')+'</td></tr>')}
+  ${(()=>{ const d=desistInfo('month'); if(!d.n) return ''; const f=BRL2.format; return `<h2>Desistências do mês <span><b>${d.n}</b> · ${d.pctOS}% das OS · <b>${f(d.valor)}</b></span></h2>${tbl('<th>Motivo</th><th class="n">Qtd</th><th class="n">% das desistências</th><th class="n">Valor</th>',d.motivos.map(m=>`<tr><td>${esc(m.label)}</td><td class="n">${m.n}</td><td class="n">${pct(m.n,d.n)}%</td><td class="n">${f(m.v)}</td></tr>`),`<tr><td>Total</td><td class="n">${d.n}</td><td class="n">100%</td><td class="n">${f(d.valor)}</td></tr>`)}`; })()}
   <div class="pr-foot">Truck Center ABC · Pitstop · Relatório comercial · uso interno</div>`;
 }
 window.addEventListener('beforeprint',buildPrint);
 
 /* ============ NAVEGAÇÃO ============ */
-function viewSaude(){ return `${demoNote()}${goalCard()}${planCard()}`; }
+function viewSaude(){ return `${demoNote()}${goalCard()}${planCard()}${resCard()}${desCard()}`; }
 const VIEWS={resumo:viewResumo,saude:viewSaude,etapas:viewEtapas,fatura:viewFatura,valet:viewValet,visitas:viewVisitas,recompra:viewRecompra};
 function render(){
   $('#tabs').innerHTML=TABS.map(([k,n])=>`<button class="tab" role="tab" data-act="tab" data-v="${k}" aria-selected="${S.tab===k}">${n}</button>`).join('');
@@ -1369,6 +1499,7 @@ function setTab(v){S.anim=true;S.tab=v;S.shown={os:12,rec:40};S.openOs=null;rend
 document.addEventListener('click',e=>{
   const b=e.target.closest('[data-act]'); if(!b) return;
   const a=b.dataset.act, v=b.dataset.v;
+  if(a==='desMode'){ S.desMode=v; return render(); }
   if(a==='gotoRec'){ S.recompra=v; S.shown.rec=40; S.sortDir=null; S.q=''; return setTab('recompra'); }
   if(a==='goalScroll') return setTab('saude');
   if(a==='printRep'){ buildPrint(); window.print(); return; }
@@ -1392,6 +1523,7 @@ function fallbackCopy(t,done){ const ta=document.createElement('textarea'); ta.v
 document.addEventListener('change',e=>{
   const id=e.target.id;
   if(id==='goalV'){ const v=parseMoney(e.target.value); if(v>0){ S.goal.valor=v; saveGoal(); } render(); }
+  else if(id==='goalV2'){ const v=parseMoney(e.target.value); if(v>0){ S.goal.valor2=v; saveGoal(); } render(); }
   else if(id==='goalS'){ S.goal.sab=e.target.checked; saveGoal(); render(); }
   else if(/^mt[0-5]$/.test(id)){ const v=parseFloat(String(e.target.value).replace(',','.')); S.meta[+id[2]]=v>0?v:null; saveMeta(); render(); }
   else if(id==='fMes'){S.month=e.target.value;S.shown={os:12,rec:40};render();}
