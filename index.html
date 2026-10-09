@@ -384,6 +384,29 @@ main.enter .cols .d i{animation:rise .6s ease both}
 .hero.slim .chip.white{box-shadow:none}
 .hero-act{display:flex;gap:8px;margin-left:auto}
 @media(max-width:720px){.hero.slim{padding:12px 14px}.hero-act{margin-left:0;width:100%}.hero-act .chip{flex:1;justify-content:center}}
+
+#prModal{position:fixed;inset:0;z-index:300;background:rgba(14,17,20,.55);display:none;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(3px)}
+#prModal.on{display:flex}
+#prModal .box{background:#fff;border-radius:14px;width:100%;max-width:560px;max-height:calc(100vh - 32px);overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.35);padding:20px 22px}
+#prModal h3{margin:0 0 2px;font:700 20px 'Barlow Condensed','Arial Narrow',Arial,sans-serif;letter-spacing:.04em;text-transform:uppercase}
+#prModal .sub{color:#5B6670;font-size:13px;margin:0 0 12px}
+#prModal h4{margin:14px 0 6px;font:700 12px 'Barlow',Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#5B6670;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+#prModal h4 span{display:inline-flex;gap:6px}
+#prModal .mini{border:1px solid #DAE1E8;background:#F4F7FA;border-radius:999px;padding:3px 10px;font:600 11px 'Barlow',Arial,sans-serif;letter-spacing:0;text-transform:none;color:#232A30;cursor:pointer}
+#prModal .mini:hover{background:#E8EDF2}
+#prModal .opts{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+#prModal .opt{display:flex;align-items:center;gap:8px;border:1px solid #DAE1E8;border-radius:8px;padding:8px 10px;font-size:13.5px;cursor:pointer;background:#fff}
+#prModal .opt:has(input:checked){border-color:#D0141B;background:#FFF5F5}
+#prModal .opt input{accent-color:#D0141B;width:16px;height:16px;margin:0}
+#prModal select{width:100%;border:1px solid #DAE1E8;border-radius:8px;padding:9px 10px;font:inherit;font-size:14px;background:#fff}
+#prModal .cnt{margin-top:14px;padding:10px 12px;background:#F4F7FA;border-radius:8px;font-size:13px;color:#232A30}
+#prModal .acts{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
+#prModal .acts button{border-radius:8px;padding:10px 16px;font:700 14px 'Barlow',Arial,sans-serif;cursor:pointer;border:1px solid #DAE1E8;background:#fff;color:#232A30}
+#prModal .acts button.go{background:#D0141B;border-color:#D0141B;color:#fff}
+#prModal .acts button.go:hover{background:#A30F15}
+@media(max-width:480px){#prModal .opts{grid-template-columns:1fr}}
+@media print{#prModal{display:none!important}}
+
 #printRoot{display:none}
 @media print{
   @page{size:A4;margin:12mm 12mm 14mm}
@@ -1437,7 +1460,7 @@ function desCard(){
 /* ============ RELATÓRIO IMPRESSO ============ */
 const BRL2=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
 function buildPrint(){
-  const list=osFiltered(), agg=stageAgg(list);
+  const P=S.prt, base=osFiltered(), agg=stageAgg(base), list=base.filter(o=>P.st[o.open?o.last:6]!==false&&(!P.resp||norm(o.resp)===P.resp));
   const sum=a=>a.reduce((t,o)=>t+o.valor,0);
   const fat=list.filter(o=>o.fat).sort((a,b)=>b.valor-a.valor), nf=list.filter(o=>(!o.fat&&!o.desist)).sort((a,b)=>b.valor-a.valor);
   const ab=list.filter(o=>o.open).sort((a,b)=>b.openMs-a.openMs);
@@ -1451,7 +1474,7 @@ function buildPrint(){
   const h5='<th>Placa</th><th>Cliente</th><th>Status</th><th>Entrada</th><th class="n">Valor</th>';
   const f5=(n,t)=>`<tr><td colspan="4">Total · ${n} ${n===1?'carro':'carros'}</td><td class="n">${BRL2.format(t)}</td></tr>`;
   $('#printRoot').innerHTML=`
-  <div class="pr-head"><span class="logo" role="img" aria-label="Truck Center ABC"></span><div><h1>Pitstop · Relatório comercial</h1><p>Período: ${per} · ${esc(un)} · emitido em ${fmtDT(new Date())}</p></div></div>
+  <div class="pr-head"><span class="logo" role="img" aria-label="Truck Center ABC"></span><div><h1>Pitstop · Relatório comercial</h1><p>Período: ${per} · ${esc(un)} · emitido em ${fmtDT(new Date())}${P.st.some(x=>x===false)?' · status: '+STAGES.filter((s,i)=>P.st[i]!==false).join(', '):''}${P.resp?' · responsável: '+esc((prRespList().find(r=>r[0]===P.resp)||[0,P.resp])[1]):''}</p></div></div>
   ${S.demo?'<div class="pr-demo">Atenção: este relatório usa dados de demonstração (fictícios). Desligue "Demonstração" no painel para imprimir só o que está na planilha.</div>':''}
   <div class="pr-kpis">
     <div><small>OS no período</small><b>${NF.format(list.length)}</b></div>
@@ -1460,17 +1483,63 @@ function buildPrint(){
     <div class="r"><small>Sem faturar</small><b>${BRL2.format(sum(nf))}</b></div>
     <div><small>Ciclo médio</small><b>${fmtH((()=>{const c=list.filter(o=>!o.open&&o.cycle!=null);return c.length?c.reduce((t,o)=>t+o.cycle,0)/c.length:null})())}</b></div>
   </div>
-  ${(()=>{ const G=goalCalc(), f=BRL2.format, c=G.st==='ok'?'#2FA566':G.st==='warn'?'#E8B923':'#D0141B'; return `<div class="pr-goal" style="--g:${c}"><b>Meta do mês (${G.mes}): ${f(G.real)} · meta 1 ${f(G.m1)} (${G.pct1}%) · meta 2 ${f(G.m2)} (${G.pct2}%)</b><div class="bar"><i style="width:${Math.min(100,pct(G.real,G.m2))}%"></i></div>${esc(goalText(G))}</div>`; })()}
-  <h2>Carros sem faturar <span><b>${nf.length}</b> · total <b>${BRL2.format(sum(nf))}</b></span></h2>
-  ${tbl(h5,rNF,f5(nf.length,sum(nf)))}
-  <h2>Carros faturados <span><b>${fat.length}</b> · total <b>${BRL2.format(sum(fat))}</b></span></h2>
-  ${tbl(h5,rF,f5(fat.length,sum(fat)))}
-  <h2>Status dos carros em processo <span><b>${ab.length}</b> ${ab.length===1?'carro':'carros'} agora</span></h2>
-  ${tbl('<th>Placa</th><th>Cliente</th><th>Etapa atual</th><th>Entrada</th><th class="n">Parado há</th><th>Responsável</th><th>Prazo</th>',rAB,'<tr><td colspan="7">'+ab.filter(o=>isLate(o,agg)).length+' atrasados · '+(S.meta.some(x=>x>0)?'critério: metas por etapa':'critério: 1,5× a média da etapa')+'</td></tr>')}
-  ${(()=>{ const d=desistInfo('month'); if(!d.n) return ''; const f=BRL2.format; return `<h2>Desistências do mês <span><b>${d.n}</b> · ${d.pctOS}% das OS · <b>${f(d.valor)}</b></span></h2>${tbl('<th>Motivo</th><th class="n">Qtd</th><th class="n">% das desistências</th><th class="n">Valor</th>',d.motivos.map(m=>`<tr><td>${esc(m.label)}</td><td class="n">${m.n}</td><td class="n">${pct(m.n,d.n)}%</td><td class="n">${f(m.v)}</td></tr>`),`<tr><td>Total</td><td class="n">${d.n}</td><td class="n">100%</td><td class="n">${f(d.valor)}</td></tr>`)}`; })()}
+  ${!P.sec.meta?'':(()=>{ const G=goalCalc(), f=BRL2.format, c=G.st==='ok'?'#2FA566':G.st==='warn'?'#E8B923':'#D0141B'; return `<div class="pr-goal" style="--g:${c}"><b>Meta do mês (${G.mes}): ${f(G.real)} · meta 1 ${f(G.m1)} (${G.pct1}%) · meta 2 ${f(G.m2)} (${G.pct2}%)</b><div class="bar"><i style="width:${Math.min(100,pct(G.real,G.m2))}%"></i></div>${esc(goalText(G))}</div>`; })()}
+  ${!P.sec.nf?'':`<h2>Carros sem faturar <span><b>${nf.length}</b> · total <b>${BRL2.format(sum(nf))}</b></span></h2>
+  ${tbl(h5,rNF,f5(nf.length,sum(nf)))}`}
+  ${!P.sec.fat?'':`<h2>Carros faturados <span><b>${fat.length}</b> · total <b>${BRL2.format(sum(fat))}</b></span></h2>
+  ${tbl(h5,rF,f5(fat.length,sum(fat)))}`}
+  ${!P.sec.ab?'':`<h2>Status dos carros em processo <span><b>${ab.length}</b> ${ab.length===1?'carro':'carros'} agora</span></h2>
+  ${tbl('<th>Placa</th><th>Cliente</th><th>Etapa atual</th><th>Entrada</th><th class="n">Parado há</th><th>Responsável</th><th>Prazo</th>',rAB,'<tr><td colspan="7">'+ab.filter(o=>isLate(o,agg)).length+' atrasados · '+(S.meta.some(x=>x>0)?'critério: metas por etapa':'critério: 1,5× a média da etapa')+'</td></tr>')}`}
+  ${(()=>{ const d=desistInfo('month'); if(!P.sec.des||!d.n) return ''; const f=BRL2.format; return `<h2>Desistências do mês <span><b>${d.n}</b> · ${d.pctOS}% das OS · <b>${f(d.valor)}</b></span></h2>${tbl('<th>Motivo</th><th class="n">Qtd</th><th class="n">% das desistências</th><th class="n">Valor</th>',d.motivos.map(m=>`<tr><td>${esc(m.label)}</td><td class="n">${m.n}</td><td class="n">${pct(m.n,d.n)}%</td><td class="n">${f(m.v)}</td></tr>`),`<tr><td>Total</td><td class="n">${d.n}</td><td class="n">100%</td><td class="n">${f(d.valor)}</td></tr>`)}`; })()}
   <div class="pr-foot">Truck Center ABC · Pitstop · Relatório comercial · uso interno</div>`;
 }
 window.addEventListener('beforeprint',buildPrint);
+
+
+/* ============ OPÇÕES DO RELATÓRIO ============ */
+const PR_SEC=[['meta','Meta do mês (2 metas)'],['nf','Carros sem faturar'],['fat','Carros faturados'],['ab','Status dos carros em processo'],['des','Desistências do mês']];
+S.prt={sec:{meta:true,nf:true,fat:true,ab:true,des:true},st:[true,true,true,true,true,true,true],resp:''};
+try{ const p=JSON.parse(localStorage.getItem('tabc_print')||'null'); if(p){ if(p.sec) Object.assign(S.prt.sec,p.sec); if(Array.isArray(p.st)&&p.st.length===7) S.prt.st=p.st.map(x=>x!==false); } }catch(e){}
+function savePrt(){ try{ localStorage.setItem('tabc_print',JSON.stringify({sec:S.prt.sec,st:S.prt.st})); }catch(e){} }
+function prCount(){
+  const P=S.prt, n=osFiltered().filter(o=>P.st[o.open?o.last:6]!==false&&(!P.resp||norm(o.resp)===P.resp)).length;
+  return n;
+}
+function prRespList(){ const m=new Map(); for(const o of CH){ const k=norm(o.resp); if(k&&!m.has(k)) m.set(k,String(o.resp).trim()); } return [...m.entries()].sort((a,b)=>a[1].localeCompare(b[1],'pt-BR')); }
+function prModalHtml(){
+  const P=S.prt;
+  const sec=PR_SEC.map(([k,l])=>`<label class="opt"><input type="checkbox" data-pk="sec" data-k="${k}" ${P.sec[k]?'checked':''}> ${l}</label>`).join('');
+  const st=STAGES.map((s,i)=>`<label class="opt"><input type="checkbox" data-pk="st" data-k="${i}" ${P.st[i]!==false?'checked':''}> ${i===6?'Finalizado (inclui faturados)':s}</label>`).join('');
+  const rs=`<option value="">Todos os responsáveis</option>`+prRespList().map(([k,l])=>`<option value="${esc(k)}" ${P.resp===k?'selected':''}>${esc(l)}</option>`).join('');
+  return `<div class="box" role="dialog" aria-label="Opções do relatório">
+    <h3>Imprimir relatório</h3><p class="sub">Escolha o que entra no relatório. As escolhas ficam salvas neste navegador.</p>
+    <h4>O que mostrar</h4><div class="opts">${sec}</div>
+    <h4>Quais status entram <span><button class="mini" data-act="prSt" data-v="all">Todos</button><button class="mini" data-act="prSt" data-v="open">Só em processo</button><button class="mini" data-act="prSt" data-v="done">Só finalizados</button></span></h4>
+    <div class="opts">${st}</div>
+    <h4>Responsável</h4><select data-pk="resp">${rs}</select>
+    <div class="cnt" id="prCnt"></div>
+    <div class="acts"><button data-act="prClose">Cancelar</button><button class="go" data-act="prGo">Imprimir / salvar PDF</button></div></div>`;
+}
+function prUpd(){ const e=document.getElementById('prCnt'); if(!e) return; const n=prCount(); e.innerHTML=`<b>${n}</b> ${n===1?'OS entra':'OS entram'} no relatório (de ${osFiltered().length} no período do painel).`; }
+function prOpen(){
+  let m=document.getElementById('prModal'); if(!m){ m=document.createElement('div'); m.id='prModal'; document.body.appendChild(m); m.addEventListener('click',e=>{ if(e.target===m) prClose(); }); }
+  m.innerHTML=prModalHtml(); m.classList.add('on'); prUpd();
+}
+function prClose(){ const m=document.getElementById('prModal'); if(m) m.classList.remove('on'); }
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]'); if(!b) return; const a=b.dataset.act;
+  if(a==='printRep'){ e.stopImmediatePropagation(); prOpen(); return; }
+  if(a==='prClose'){ prClose(); return; }
+  if(a==='prSt'){ const v=b.dataset.v; S.prt.st=STAGES.map((s,i)=>v==='all'?true:v==='open'?i<6:i===6); savePrt(); document.getElementById('prModal').innerHTML=prModalHtml(); prUpd(); return; }
+  if(a==='prGo'){ prClose(); buildPrint(); setTimeout(()=>window.print(),80); return; }
+},true);
+document.addEventListener('change',e=>{
+  const t=e.target; if(!t.dataset||!t.dataset.pk) return;
+  if(t.dataset.pk==='sec') S.prt.sec[t.dataset.k]=t.checked;
+  else if(t.dataset.pk==='st') S.prt.st[+t.dataset.k]=t.checked;
+  else if(t.dataset.pk==='resp') S.prt.resp=t.value;
+  savePrt(); prUpd();
+});
 
 /* ============ NAVEGAÇÃO ============ */
 function viewSaude(){ return `${demoNote()}${goalCard()}${planCard()}${resCard()}${desCard()}`; }
