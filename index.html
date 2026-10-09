@@ -421,6 +421,12 @@ main.enter .cols .d i{animation:rise .6s ease both}
 .ag-row .nm span.d{display:inline-block;color:var(--red-dark);font-size:11.5px;margin-left:8px;padding:1px 8px;border-radius:999px;background:var(--red-soft);color:var(--red-dark);font:600 11.5px var(--f-body);letter-spacing:0;vertical-align:2px}
 .ag-more{align-self:flex-start;background:transparent;border:0;color:var(--red);font:600 13px var(--f-body);cursor:pointer;padding:4px 0}
 
+
+.os-d .sv{display:flex;gap:10px;align-items:baseline;margin-bottom:8px;padding-bottom:8px;border-bottom:1px dashed var(--line);font-size:14px}
+.os-d .sv small{font:600 11px var(--f-body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);flex:none}
+.os-d .sv b{font-weight:600;overflow-wrap:anywhere}
+.os-d .sv.none b{color:var(--muted);font-weight:400}
+
 #printRoot{display:none}
 @media print{
   @page{size:A4;margin:12mm 12mm 14mm}
@@ -718,7 +724,7 @@ function buildChegada(rows, now){
     out.push({
       placa:String(r[1]??'').trim(), colab:String(r[2]??'').trim(), local:String(r[3]??'').trim(),
       cliente:String(r[4]??'').trim(), os:r[6]==null||r[6]===''?'':String(r[6]).replace(/\.0$/,''),
-      fat:norm(r[7]).startsWith('sim'), desist, motivo:String(r[17]??'').trim(), resp:String(r[8]??'').trim(), valor:pn(r[9]),
+      fat:norm(r[7]).startsWith('sim'), desist, motivo:String(r[17]??'').trim(), servico:String(r[18]??'').trim(), resp:String(r[8]??'').trim(), valor:pn(r[9]),
       ts, base:ts[present[0]], steps, last, open,
       openMs: open? Math.max(0, now-ts[last]) : null,
       cycle: ts[6]&&ts[present[0]] ? ts[6]-ts[present[0]] : null
@@ -760,7 +766,7 @@ function demoChegada(now){
       rows.push([ts[0],`${L()}${L()}${L()}${Math.floor(rnd()*10)}${L()}${Math.floor(rnd()*10)}${Math.floor(rnd()*10)}`,
         ['Tati','Julio','Fabi','Glauci'][Math.floor(rnd()*4)], rnd()<.62?'SBC':'Maua', pick(), '', osn++,
         fin&&rnd()<.82?'Sim':'Não', ['Nelson','Guilherme','Zu','Aloiso','Baixada','Lobo'][Math.floor(rnd()*6)], Math.round((800+rnd()*rnd()*47000)/50)*50,
-        ts[1],ts[2],ts[3],ts[4],ts[5],ts[6], des?'sim':'não', des?['Preço alto','Fechou em outra oficina','Cliente adiou o serviço','Sem peça disponível','Preço alto'][osn%5]:'']);
+        ts[1],ts[2],ts[3],ts[4],ts[5],ts[6], des?'sim':'não', des?['Preço alto','Fechou em outra oficina','Cliente adiou o serviço','Sem peça disponível','Preço alto'][osn%5]:'',['Revisão completa','Troca de embreagem','Retífica de cabeçote','Freios e suspensão','Troca de óleo e filtros','Reparo no diferencial','Elétrica e diagnóstico'][osn%7]]);
     }
   }
   return rows;
@@ -802,7 +808,7 @@ async function refreshLive(auto){
     const [cl,ch]=await Promise.all([getTSV(URL_CLIENTES),getTSV(URL_CHEGADA)]);
     if(!cl.length||String(cl[0][0]).trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')!=='codigo'){ const e=new Error('abas'); e.code='abas'; throw e; }
     const clientes=cl.slice(1).filter(r=>String(r[0]).trim()!=='').map(r=>[Number(r[0]),String(r[1]||''),String(r[5]||''),String(r[4]||''),String(r[7]||'')]);
-    const chegada=ch.slice(1).map(r=>{ const o=r.slice(0,18); while(o.length<18) o.push(''); return o; }).filter(o=>o.some(x=>String(x).trim()!==''));
+    const chegada=ch.slice(1).map(r=>{ const o=r.slice(0,19); while(o.length<19) o.push(''); return o; }).filter(o=>o.some(x=>String(x).trim()!==''));
     LIVE={clientes,chegada,at:new Date()};
     if(!auto||firstLoad){ S.demo=false; $('#demoSw').checked=false; S.month='all'; S.local='all'; S.openOs=null; }
     S.liveMsg=(auto&&!firstLoad)?null:{kind:'ok',text:'Dados atualizados da planilha: '+NF.format(chegada.length)+' registros de chegada e '+NF.format(clientes.length)+' clientes.'};
@@ -1005,7 +1011,7 @@ function osRow(o){
       <div class="segbar">${bar}</div>
       <div class="os-r num">${tottxt}<small>${fmtDate(o.base)}</small></div>
     </button>
-    <div class="os-d">${det||'<span style="color:var(--muted)">Só há um horário registrado nesta OS.</span>'}
+    <div class="os-d"><div class="sv ${o.servico?'':'none'}"><small>Serviço</small><b>${o.servico?esc(o.servico):'Não informado na planilha'}</b></div>${det||'<span style="color:var(--muted)">Só há um horário registrado nesta OS.</span>'}
       <div style="margin-top:6px;color:var(--muted);font-size:12.5px">Entrada ${fmtDT(o.base)} · ${esc(o.local||'—')} · responsável ${esc(o.resp||'—')}</div></div>
   </div>`;
 }
@@ -1505,9 +1511,9 @@ function buildPrint(){
   const per=S.month==='all'?'todos os meses':monthLabel(S.month);
   const stat=o=>o.open? STAGES[o.last] : 'Finalizado';
   const tbl=(head,rows,foot)=> rows.length? `<table class="pr-t"><thead><tr>${head}</tr></thead><tbody>${rows.join('')}</tbody><tfoot>${foot}</tfoot></table>` : '<div class="pr-empty">Nenhum registro neste período.</div>';
-  const rNF=nf.map(o=>`<tr><td class="pl">${esc(o.placa||'—')}</td><td>${esc(o.cliente||'Sem cliente')}${o.os?'<br><small>OS '+esc(o.os)+'</small>':''}</td><td>${esc(stat(o))}</td><td>${fmtDate(o.base)}</td><td class="n">${BRL2.format(o.valor)}</td></tr>`);
-  const rF=fat.map(o=>`<tr><td class="pl">${esc(o.placa||'—')}</td><td>${esc(o.cliente||'Sem cliente')}${o.os?'<br><small>OS '+esc(o.os)+'</small>':''}</td><td>${esc(stat(o))}</td><td>${fmtDate(o.base)}</td><td class="n">${BRL2.format(o.valor)}</td></tr>`);
-  const rAB=ab.map(o=>{ const late=isLate(o,agg); return `<tr><td class="pl">${esc(o.placa||'—')}</td><td>${esc(o.cliente||'Sem cliente')}${o.os?'<br><small>OS '+esc(o.os)+'</small>':''}</td><td>${esc(STAGES[o.last])}</td><td>${fmtDT(o.base)}</td><td class="n">${fmtH(o.openMs)}</td><td>${esc(o.resp||'—')}</td><td>${late?'<span class="pr-tag r">Atrasado</span>':'<span class="pr-tag g">No prazo</span>'}</td></tr>`; });
+  const rNF=nf.map(o=>`<tr><td class="pl">${esc(o.placa||'—')}</td><td>${esc(o.cliente||'Sem cliente')}${o.os?'<br><small>OS '+esc(o.os)+'</small>':''}${P.sec.svc&&o.servico?'<br><small>Serviço: '+esc(o.servico)+'</small>':''}</td><td>${esc(stat(o))}</td><td>${fmtDate(o.base)}</td><td class="n">${BRL2.format(o.valor)}</td></tr>`);
+  const rF=fat.map(o=>`<tr><td class="pl">${esc(o.placa||'—')}</td><td>${esc(o.cliente||'Sem cliente')}${o.os?'<br><small>OS '+esc(o.os)+'</small>':''}${P.sec.svc&&o.servico?'<br><small>Serviço: '+esc(o.servico)+'</small>':''}</td><td>${esc(stat(o))}</td><td>${fmtDate(o.base)}</td><td class="n">${BRL2.format(o.valor)}</td></tr>`);
+  const rAB=ab.map(o=>{ const late=isLate(o,agg); return `<tr><td class="pl">${esc(o.placa||'—')}</td><td>${esc(o.cliente||'Sem cliente')}${o.os?'<br><small>OS '+esc(o.os)+'</small>':''}${P.sec.svc&&o.servico?'<br><small>Serviço: '+esc(o.servico)+'</small>':''}</td><td>${esc(STAGES[o.last])}</td><td>${fmtDT(o.base)}</td><td class="n">${fmtH(o.openMs)}</td><td>${esc(o.resp||'—')}</td><td>${late?'<span class="pr-tag r">Atrasado</span>':'<span class="pr-tag g">No prazo</span>'}</td></tr>`; });
   const h5='<th>Placa</th><th>Cliente</th><th>Status</th><th>Entrada</th><th class="n">Valor</th>';
   const f5=(n,t)=>`<tr><td colspan="4">Total · ${n} ${n===1?'carro':'carros'}</td><td class="n">${BRL2.format(t)}</td></tr>`;
   $('#printRoot').innerHTML=`
@@ -1534,8 +1540,8 @@ window.addEventListener('beforeprint',buildPrint);
 
 
 /* ============ OPÇÕES DO RELATÓRIO ============ */
-const PR_SEC=[['meta','Meta do mês (2 metas)'],['nf','Carros sem faturar'],['fat','Carros faturados'],['ab','Status dos carros em processo'],['des','Desistências do mês']];
-S.prt={sec:{meta:true,nf:true,fat:true,ab:true,des:true},st:[true,true,true,true,true,true,true],resp:''};
+const PR_SEC=[['meta','Meta do mês (2 metas)'],['nf','Carros sem faturar'],['fat','Carros faturados'],['ab','Status dos carros em processo'],['des','Desistências do mês'],['svc','Serviço de cada OS']];
+S.prt={sec:{meta:true,nf:true,fat:true,ab:true,des:true,svc:true},st:[true,true,true,true,true,true,true],resp:''};
 try{ const p=JSON.parse(localStorage.getItem('tabc_print')||'null'); if(p){ if(p.sec) Object.assign(S.prt.sec,p.sec); if(Array.isArray(p.st)&&p.st.length===7) S.prt.st=p.st.map(x=>x!==false); } }catch(e){}
 function savePrt(){ try{ localStorage.setItem('tabc_print',JSON.stringify({sec:S.prt.sec,st:S.prt.st})); }catch(e){} }
 function prCount(){
