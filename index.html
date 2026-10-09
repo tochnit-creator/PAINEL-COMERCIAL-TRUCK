@@ -743,7 +743,19 @@ const fmtDate = d => d? d.toLocaleDateString('pt-BR') : '—';
 const fmtDT = d => d? d.toLocaleDateString('pt-BR')+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '—';
 
 /* ============ ETAPAS ============ */
-const STAGES = ['Entrada','Valetamento','Aguardando orçamento','Aguardando aprovação do cliente','Orçamento autorizado','Aguardando peças','Finalizado'];
+const STAGES = ['Entrada','Valetamento','Aguardando orçamento','Aguardando aprovação cliente','Orçamentos autorizados','Aguardando peças','Finalizado'];
+/* a coluna F (status) da planilha manda: o status atual vem dela; os horários K–P só medem o tempo */
+function stageFromStatus(txt){
+  const n=norm(txt); if(!n) return null;
+  if(n.includes('final')) return 6;
+  if(n.includes('pec')) return 5;
+  if(n.includes('autoriz')) return 4;
+  if(n.includes('aprov')) return 3;
+  if(n.includes('orc')) return 2;
+  if(n.includes('valet')) return 1;
+  if(n.includes('entrada')) return 0;
+  return null;
+}
 const STEPS = [
   {n:'Entrada até valetamento', sub:'Placa entrou e foi para o valetamento'},
   {n:'Valetamento até orçamento', sub:'Do valetamento ao orçamento pronto'},
@@ -766,14 +778,15 @@ function buildChegada(rows, now){
       const a=present[k], b=present[k+1], ms=ts[b]-ts[a];
       if(ms>=0) steps.push({from:a,to:b,ms});
     }
-    const last=present[present.length-1];
+    const lastTs=present[present.length-1], stF=stageFromStatus(r[5]);
+    const last=stF!=null?stF:lastTs;
     const desist=norm(r[16]).startsWith('sim'); const open = last<6 && !desist;
     out.push({
       placa:String(r[1]??'').trim(), colab:String(r[2]??'').trim(), local:String(r[3]??'').trim(),
       cliente:String(r[4]??'').trim(), os:r[6]==null||r[6]===''?'':String(r[6]).replace(/\.0$/,''),
       fat:norm(r[7]).startsWith('sim'), desist, motivo:String(r[17]??'').trim(), servico:String(r[18]??'').trim(), resp:String(r[8]??'').trim(), valor:pn(r[9]),
       ts, base:ts[present[0]], steps, last, open,
-      openMs: open? Math.max(0, now-ts[last]) : null,
+      openMs: open? Math.max(0, now-ts[lastTs]) : null, statusRaw:String(r[5]??'').trim(),
       cycle: ts[6]&&ts[present[0]] ? ts[6]-ts[present[0]] : null
     });
   }
