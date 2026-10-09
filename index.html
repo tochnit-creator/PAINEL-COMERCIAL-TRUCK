@@ -1542,11 +1542,7 @@ function goalCard(u){
       ${one?'':stat('Falta · meta 2',G.b2?'—':f(G.falta2),G.b2?'batida':G.pct2+'% concluído')}
       ${one?'':stat('Por dia útil · meta 2',G.b2?'—':G.porDia2!=null?f(G.porDia2):'—',G.res+' dias úteis restantes')}
       ${stat('Ritmo atual',G.media!=null?f(G.media):'—','por dia útil'+(G.ticket?' · ticket '+f(G.ticket):''))}
-    </div>
-    <div class="gstats" style="grid-template-columns:repeat(auto-fit,minmax(210px,1fr))">
-      ${(()=>{ if(G.proj==null) return stat('Projeção do mês','—','sem dias fechados'); const d=m=>G.proj>=m?'sobra '+f(G.proj-m):'faltam '+f(m-G.proj);
-        if(one) return stat('Projeção do mês',f(G.proj),pct(G.proj,G.m1)+'% da meta · '+d(G.m1));
-        return stat('Projeção · meta 1',f(G.proj),pct(G.proj,G.m1)+'% da meta 1 · '+d(G.m1))+stat('Projeção · meta 2',f(G.proj),pct(G.proj,G.m2)+'% da meta 2 · '+d(G.m2))+stat('Projeção · ambas as metas',G.proj>=G.m2?'Bate as duas':G.proj>=G.m1?'Bate só a meta 1':'Não bate nenhuma','fecha em '+f(G.proj)+' mantendo o ritmo'); })()}
+      ${stat('Projeção do mês',G.proj!=null?f(G.proj):'—',G.proj!=null?(one?pct(G.proj,G.m1)+'% da meta · '+(G.proj>=G.m1?'sobra '+f(G.proj-G.m1):'faltam '+f(G.m1-G.proj)):pct(G.proj,G.m1)+'% da meta 1 · '+pct(G.proj,G.m2)+'% da meta 2'):'sem dias fechados')}
     </div>
     <p class="note">Conta só OS faturadas (coluna H = sim), no dia em que foram finalizadas; OS em aberto e desistências não entram. Dias úteis de segunda a ${S.goal.sab?'sábado':'sexta'}; feriados não são descontados. As metas ficam salvas neste navegador.</p>
   </section>`;
