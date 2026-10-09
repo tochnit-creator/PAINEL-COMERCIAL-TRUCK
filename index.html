@@ -1006,6 +1006,7 @@ function viewResumo(){
   if(rc.vencidos) chips.push(`<button class="chip yellow" data-act="gotoRec" data-v="vencidos"><span class="dot red"></span>${NF.format(rc.vencidos)} clientes passaram de ${S.thr.vencido} dias</button>`);
   if(esf) chips.push(`<button class="chip white" data-act="gotoRec" data-v="esfria"><span class="dot yellow"></span>${esf} clientes esfriando</button>`);
   if(nfat.length) chips.push(`<button class="chip white" data-act="goto" data-v="fatura"><span class="dot yellow"></span>${nfat.length} OS sem faturar · ${BRL.format(sum(nfat))}</button>`);
+  { const D=desistInfo('month'); if(D.n) chips.push(`<button class="chip white" data-act="goDes"><span class="dot red"></span>${D.clients} ${D.clients===1?'cliente desistiu':'clientes desistiram'} no mês${D.valor>0?' · '+BRL.format(D.valor)+' perdidos':''}</button>`); }
   if(!chips.length) chips.push('<span class="chip green">Tudo em dia</span>');
   return `${demoNote()}${filtersBar(true)}
   <section class="hero slim"><h1>Atenção agora</h1><div class="chips">${chips.join('')}</div><div class="hero-act"><button class="chip ghost" data-act="printRep">Imprimir relatório</button><button class="chip ghost" data-act="stOpen">Imprimir por status</button><button class="chip ghost" data-act="sendResumo">Resumo no WhatsApp</button></div></section>
@@ -1884,6 +1885,7 @@ function setTab(v){S.anim=true;S.tab=v;S.shown={os:12,rec:40};S.openOs=null;rend
 document.addEventListener('click',e=>{
   const b=e.target.closest('[data-act]'); if(!b) return;
   const a=b.dataset.act, v=b.dataset.v;
+  if(a==='goDes'){ setTab('saude'); setTimeout(()=>{ const e=document.getElementById('desCard'); if(e) e.scrollIntoView({behavior:'smooth',block:'start'}); },150); return; }
   if(a==='planU'){ S.planU=v; return render(); }
   if(a==='desMode'){ S.desMode=v; return render(); }
   if(a==='aged'){ S.aged=+v; S.agedAll=false; return render(); }
