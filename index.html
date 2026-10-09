@@ -407,6 +407,20 @@ main.enter .cols .d i{animation:rise .6s ease both}
 @media(max-width:480px){#prModal .opts{grid-template-columns:1fr}}
 @media print{#prModal{display:none!important}}
 
+
+.ag-sum{display:flex;flex-wrap:wrap;gap:6px 22px;align-items:baseline;font-size:14px;color:var(--ink-2)}
+.ag-sum b{font:700 22px/1 var(--f-display);letter-spacing:.01em;color:var(--ink)}
+.ag-sum b.red{color:var(--red)}
+.ag-sum span{color:var(--muted);font-size:13px}
+.ag-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 14px;align-items:center;padding:9px 2px;border-top:1px solid var(--line)}
+.ag-row:first-child{border-top:0}
+.ag-row .nm b{font:700 16px var(--f-display);letter-spacing:.05em}
+.ag-row .nm span{display:block;color:var(--muted);font-size:12.5px;overflow-wrap:anywhere}
+.ag-row .v{text-align:right;font:700 16px var(--f-display);letter-spacing:.02em;white-space:nowrap}
+.ag-row .v small{display:block;font:500 12px var(--f-body);color:var(--muted);letter-spacing:0}
+.ag-row .nm span.d{display:inline-block;color:var(--red-dark);font-size:11.5px;margin-left:8px;padding:1px 8px;border-radius:999px;background:var(--red-soft);color:var(--red-dark);font:600 11.5px var(--f-body);letter-spacing:0;vertical-align:2px}
+.ag-more{align-self:flex-start;background:transparent;border:0;color:var(--red);font:600 13px var(--f-body);cursor:pointer;padding:4px 0}
+
 #printRoot{display:none}
 @media print{
   @page{size:A4;margin:12mm 12mm 14mm}
@@ -803,7 +817,7 @@ let unlocked=false;
 function tryAuto(){ refreshLive(); }
 
 /* ============ ESTADO ============ */
-const S = {
+const S = {aged:15,agedAll:false,
   tab:'resumo', month:'all', local:'all', demo:true,
   thr:{alerta:30, proximo:60, vencido:90}, freq:{min:3, dias:90},
   anim:true, desMode:'month', meta:[null,null,null,null,null,null], recompra:'vencidos', sortDir:null, q:'', qOs:'', shown:{os:12, rec:40}
@@ -906,8 +920,31 @@ function viewResumo(){
       </div>
     </section>
   </div>
+  ${agedCard()}
   <section class="card"><div class="card-h"><h2>Tempo médio por etapa<small>Quanto cada OS espera até passar para o próximo setor</small></h2><button class="more" data-act="goto" data-v="etapas">Detalhar</button></div>${stageBars(agg)}</section>`;
 }
+
+function agedInfo(days){
+  days=days||S.aged;
+  const list=CH.filter(o=>o.open&&!o.fat&&!o.desist&&(S.local==='all'||norm(o.local)===S.local))
+    .map(o=>({o,d:Math.floor((NOW-o.base)/DAY)})).filter(x=>x.d>=days).sort((a,b)=>b.d-a.d||b.o.valor-a.o.valor);
+  return {rows:list,placas:new Set(list.map(x=>norm(x.o.placa)||('os'+x.o.os))).size,n:list.length,valor:list.reduce((t,x)=>t+x.o.valor,0),semValor:list.filter(x=>!(x.o.valor>0)).length};
+}
+function agedCard(){
+  const A=agedInfo(), f=BRL.format, N=S.aged;
+  const seg=`<div class="seg" role="group" aria-label="Dias">${[7,15,30].map(d=>`<button data-act="aged" data-v="${d}" aria-pressed="${N===d}">${d} dias</button>`).join('')}</div>`;
+  const head=`<div class="card-h"><h2>Parados há mais de ${N} dias<small>Entraram há ${N} dias ou mais, ainda não finalizaram e não foram faturados</small></h2>${seg}</div>`;
+  if(!A.n) return `<section class="card" id="agedCard">${head}${empty('Nenhuma OS nessa situação. Nenhum carro passou de '+N+' dias sem finalizar.')}</section>`;
+  const lim=S.agedAll?A.rows.length:8;
+  const rows=A.rows.slice(0,lim).map(({o,d})=>`<div class="ag-row"><div class="nm"><b>${esc(o.placa||'Sem placa')}</b><span class="d">${d} dias</span><span>${esc(titleCase(o.cliente)||'Sem cliente')}${o.os?' · OS '+esc(o.os):''} · ${esc(STAGES[o.last])}${o.resp?' · '+esc(o.resp):''}</span></div><div class="v num">${o.valor>0?f(o.valor):'—'}<small>entrou ${fmtDate(o.base)}</small></div></div>`).join('');
+  const more=A.n>8?`<button class="ag-more" data-act="agedAll">${S.agedAll?'Mostrar menos':'Ver todas as '+A.n+' OS'}</button>`:'';
+  return `<section class="card" id="agedCard">${head}
+    <div class="ag-sum"><div><b class="red num">${A.placas}</b> <span>${A.placas===1?'placa':'placas'}</span></div><div><b class="num">${A.n}</b> <span>${A.n===1?'OS':'OS'}</span></div><div><b class="num">${f(A.valor)}</b> <span>ainda não faturado</span></div></div>
+    <div>${rows}</div>${more}
+    ${A.semValor?`<p class="note">${A.semValor} OS sem valor preenchido contam como R$ 0.</p>`:''}
+  </section>`;
+}
+
 function waitingNow(abertas,agg){
   if(!abertas.length) return empty('Nenhuma OS em andamento neste filtro.');
   const rows=abertas.slice().sort((a,b)=>b.openMs-a.openMs).slice(0,8);
@@ -1569,6 +1606,8 @@ document.addEventListener('click',e=>{
   const b=e.target.closest('[data-act]'); if(!b) return;
   const a=b.dataset.act, v=b.dataset.v;
   if(a==='desMode'){ S.desMode=v; return render(); }
+  if(a==='aged'){ S.aged=+v; S.agedAll=false; return render(); }
+  if(a==='agedAll'){ S.agedAll=!S.agedAll; return render(); }
   if(a==='gotoRec'){ S.recompra=v; S.shown.rec=40; S.sortDir=null; S.q=''; return setTab('recompra'); }
   if(a==='goalScroll') return setTab('saude');
   if(a==='printRep'){ buildPrint(); window.print(); return; }
