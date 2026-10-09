@@ -453,6 +453,27 @@ main.enter .cols .d i{animation:rise .6s ease both}
 .cal-day .ct button:hover{background:var(--red-dark)}
 @media(max-width:480px){.cal-d{min-height:42px}.cal-d b{font-size:10.5px}.cal-nav b{min-width:120px}}
 
+
+@media print{
+  .pr-page{break-before:page}
+  .pr-big{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center;margin:12px 0 4px;padding:12px 16px;border:1px solid #DAE1E8;border-left:6px solid #D0141B;border-radius:8px;background:#FAFBFC}
+  .pr-big .p{font:700 44px/1 'Barlow Condensed','Arial Narrow',Arial,sans-serif;color:#D0141B}
+  .pr-big .t{font-size:12.5px;line-height:1.45}
+  .pr-sign{display:grid;grid-template-columns:2fr 1fr 1fr;gap:18px;margin-top:22px;break-inside:avoid}
+  .pr-sign div{border-top:1px solid #444;padding-top:4px;font-size:10px;color:#444;text-transform:uppercase;letter-spacing:.06em}
+  .pr-t td.red{color:#D0141B;font-weight:700}
+}
+
+
+.ubadge{display:inline-block;vertical-align:2px;margin-left:8px;padding:2px 10px;border-radius:999px;font:700 12px var(--f-body);letter-spacing:.08em;text-transform:uppercase;background:var(--ink);color:#fff}
+.ubadge.maua{background:#E8B923;color:#3b2d00}
+.goal .gst.none{background:var(--card-2);color:var(--muted)}.goal .gst.none .dot{background:#9FB0BE}
+.units-note{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 14px;border-radius:12px;background:var(--card);box-shadow:var(--sh);font-size:13.5px;color:var(--ink-2)}
+.units-note b{font-weight:700}
+.pseg{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ag-row .nm .ub{display:inline-block;margin-left:6px;padding:0 8px;border-radius:999px;font:700 10.5px var(--f-body);letter-spacing:.07em;text-transform:uppercase;background:var(--ink);color:#fff;vertical-align:2px}
+.ag-row .nm .ub.maua{background:#E8B923;color:#3b2d00}
+
 #printRoot{display:none}
 @media print{
   @page{size:A4;margin:12mm 12mm 14mm}
@@ -923,15 +944,15 @@ function viewResumo(){
   const cycAvg=cyc.length? cyc.reduce((t,o)=>t+o.cycle,0)/cyc.length : null;
   const rc=recompraCounts();
   const lateN=abertas.filter(o=>isLate(o,agg)).length, esf=esfriando().length;
-  const chips=[]; const G=goalCalc();
-  if(G.st!=='ok') chips.push(`<button class="chip ${G.st==='bad'?'red':'yellow'}" data-act="goalScroll"><span class="dot ${G.st==='bad'?'':'yellow'}"></span>Meta do mês: ${G.pctReal}% · ${G.st==='bad'?'abaixo do ritmo':'quase no ritmo'}</button>`);
+  const chips=[];
+  for(const u of ['sbc','maua']){ const G=goalCalc(u); if(G.hasMeta&&G.st!=='ok') chips.push(`<button class="chip ${G.st==='bad'?'red':'yellow'}" data-act="goalScroll"><span class="dot ${G.st==='bad'?'':'yellow'}"></span>Meta ${G.label}: ${G.pctReal}% · ${G.st==='bad'?'abaixo do ritmo':'quase no ritmo'}</button>`); }
   if(lateN) chips.push(`<button class="chip red" data-act="goto" data-v="etapas"><span class="bell"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></span>${lateN} OS ${S.meta.some(x=>x>0)?'acima da meta':'acima do normal'}</button>`);
   if(rc.vencidos) chips.push(`<button class="chip yellow" data-act="gotoRec" data-v="vencidos"><span class="dot red"></span>${NF.format(rc.vencidos)} clientes passaram de ${S.thr.vencido} dias</button>`);
   if(esf) chips.push(`<button class="chip white" data-act="gotoRec" data-v="esfria"><span class="dot yellow"></span>${esf} clientes esfriando</button>`);
   if(nfat.length) chips.push(`<button class="chip white" data-act="goto" data-v="fatura"><span class="dot yellow"></span>${nfat.length} OS sem faturar · ${BRL.format(sum(nfat))}</button>`);
   if(!chips.length) chips.push('<span class="chip green">Tudo em dia</span>');
   return `${demoNote()}${filtersBar(true)}
-  <section class="hero slim"><h1>Atenção agora</h1><div class="chips">${chips.join('')}</div><div class="hero-act"><button class="chip ghost" data-act="printRep">Imprimir relatório</button><button class="chip ghost" data-act="sendResumo">Resumo no WhatsApp</button></div></section>
+  <section class="hero slim"><h1>Atenção agora</h1><div class="chips">${chips.join('')}</div><div class="hero-act"><button class="chip ghost" data-act="printRep">Imprimir relatório</button><button class="chip ghost" data-act="stOpen">Imprimir por status</button><button class="chip ghost" data-act="sendResumo">Resumo no WhatsApp</button></div></section>
   <div class="grid kpis">
     ${kpi('OS no período',NF.format(list.length),`${fin.length} finalizadas · ${abertas.length} em andamento`)}
     ${kpi('Ciclo médio',fmtH(cycAvg),'Da entrada até finalizado')}
@@ -1263,8 +1284,10 @@ function buildResumo(){
     'Ciclo médio: '+fmtH(cA),
     `Faturado: ${BRL.format(sum(fat))} (${fat.length} OS)`,
     `Ainda não faturado: ${BRL.format(sum(nf))} (${nf.length} OS)`];
-  { const G=goalCalc(), f=BRL.format, d=desistInfo('month');
-    L.push(`Meta 1 (${f(G.m1)}): ${G.pct1}% · ${G.b1?'batida':'faltam '+f(G.falta1)+(G.porDia1!=null?' · '+f(G.porDia1)+' por dia útil (restam '+G.res+')':'')}`, `Meta 2 (${f(G.m2)}): ${G.pct2}% · ${G.b2?'batida':'faltam '+f(G.falta2)+(G.porDia2!=null?' · '+f(G.porDia2)+' por dia útil':'')}`);
+  { const f=BRL.format, d=desistInfo('month');
+    for(const u of ['sbc','maua']){ const G=goalCalc(u);
+      if(!G.hasMeta){ L.push(`${G.label}: faturado ${f(G.real)} (meta ainda não definida)`); continue; }
+      L.push(`${G.label} · meta 1 (${f(G.m1)}): ${G.pct1}% · ${G.b1?'batida':'faltam '+f(G.falta1)+(G.porDia1!=null?' · '+f(G.porDia1)+' por dia útil (restam '+G.res+')':'')}`, `${G.label} · meta 2 (${f(G.m2)}): ${G.pct2}% · ${G.b2?'batida':'faltam '+f(G.falta2)+(G.porDia2!=null?' · '+f(G.porDia2)+' por dia útil':'')}`); }
     if(d.n) L.push(`Desistências do mês: ${d.n} (${d.pctOS}% das OS)${d.valor>0?' · '+f(d.valor):''} · principal motivo: ${d.top}`); }
   if(maxI>=0) L.push(`Maior espera: ${STEPS[maxI].n} (média ${fmtH(agg[maxI].avg)})`);
   L.push('', `OS paradas acima ${S.meta.some(x=>x>0)?'da meta':'do normal'}: ${late.length}`);
@@ -1325,25 +1348,25 @@ function startAutoRefresh(){
 /* ============ PLANO DE FATURAMENTO ============ */
 const PL_ACAO=['Confirmar entrada','Cobrar o orçamento','Fechar o orçamento','Ligar para o cliente','Acompanhar a execução','Cobrar a chegada das peças'];
 function planCalc(G){
-  const k=monthKey(NOW);
-  const open=CH.filter(o=>(!o.fat&&!o.desist)&&monthKey(o.base)===k);
+  const k=monthKey(NOW), U=G.u;
+  const open=CH.filter(o=>unitOf(o)===U&&(!o.fat&&!o.desist)&&monthKey(o.base)===k);
   const nf=open.filter(o=>o.valor>0), semValor=open.length-nf.length;
-  const old=CH.filter(o=>(!o.fat&&!o.desist)&&monthKey(o.base)!==k&&o.valor>0);
+  const old=CH.filter(o=>unitOf(o)===U&&(!o.fat&&!o.desist)&&monthKey(o.base)!==k&&o.valor>0);
   const tier=o=>!o.open?1:(o.last>=4?2:3);
   const list=nf.map(o=>({o,t:tier(o)})).sort((a,b)=>a.t-b.t||b.o.valor-a.o.valor);
   let acc=0; list.forEach(x=>{ acc+=x.o.valor; x.acc=acc; });
   const tot=[0,0,0,0], cnt=[0,0,0,0]; list.forEach(x=>{ tot[x.t]+=x.o.valor; cnt[x.t]++; });
-  const dayGoal=G.batida?0:(G.porDia!=null?G.porDia:G.falta);
+  const dayGoal=(G.batida||!G.hasMeta)?0:(G.porDia!=null?G.porDia:G.falta);
   const basket=[]; let bs=0; for(const x of list){ if(bs>=dayGoal) break; basket.push(x); bs+=x.o.valor; }
-  const cut=G.batida?-1:list.findIndex(x=>x.acc>=G.falta);
+  const cut=(G.batida||!G.hasMeta)?-1:list.findIndex(x=>x.acc>=G.falta);
   return {list,tot,cnt,dayGoal,basket,bs,cut,total:acc,semValor,old,oldSum:old.reduce((t,o)=>t+o.valor,0)};
 }
 function planCard(){
-  const G=goalCalc(), P=planCalc(G), M=G.meta, M1=G.m1, M2=G.m2;
+  const PU=S.planU||'sbc', G=goalCalc(PU), P=planCalc(G), M=G.meta, M1=G.m1, M2=G.m2;
   const base=G.real, c1=base+P.tot[1], c2=c1+P.tot[2], c3=c2+P.tot[3];
   const sc=Math.max(M2,c3,1), w=v=>(v/sc*100).toFixed(2)+'%', mp1=M1/sc*100, mp2=M2/sc*100;
   const p=v=>pct(v,M)+'%';
-  const tierCard=(t,l,sub)=>{ const c=t===1?c1:t===2?c2:c3; return `<div class="tier t${t}"><small>${l}</small><b class="num">${BRL.format(P.tot[t])}</b><span>${P.cnt[t]} OS · ${sub}</span>${P.cnt[t]?`<span>Chega a ${pct(c,M1)}% da meta 1 · ${pct(c,M2)}% da meta 2</span>`:''}</div>`; };
+  const tierCard=(t,l,sub)=>{ const c=t===1?c1:t===2?c2:c3; return `<div class="tier t${t}"><small>${l}</small><b class="num">${BRL.format(P.tot[t])}</b><span>${P.cnt[t]} OS · ${sub}</span>${P.cnt[t]&&G.hasMeta?`<span>Chega a ${pct(c,M1)}% da meta 1 · ${pct(c,M2)}% da meta 2</span>`:''}</div>`; };
   const tag={1:['green','Pronta p/ faturar'],2:['amber','Em execução'],3:['grey','Depende do cliente']};
   const inB=new Set(P.basket.map(x=>x.o));
   const show=P.list.slice(0,Math.min(P.list.length,Math.max(12,P.cut+2),25));
@@ -1356,7 +1379,8 @@ function planCard(){
       <div class="v num">${BRL.format(o.valor)}<small>acumulado ${BRL.format(x.acc)}</small></div></div>${i===P.cut?`<div class="pl-cut">Faturando até aqui (${BRL.format(x.acc)}), a ${G.nome} é atingida</div>`:''}`;
   }).join('');
   let msg;
-  if(!P.list.length) msg='Não há OS sem faturar com valor preenchido neste mês.';
+  if(!P.list.length) msg='Não há OS sem faturar com valor preenchido neste mês em '+G.label+'.';
+  else if(!G.hasMeta) msg='A meta de '+G.label+' ainda não foi definida, então não há cesta do dia. A fila abaixo mostra, em ordem de prontidão, as OS de '+G.label+' sem faturar: prontas '+BRL.format(P.tot[1])+', em execução '+BRL.format(P.tot[2])+' e dependendo do cliente '+BRL.format(P.tot[3])+'.';
   else if(G.batida) msg=`As duas metas do mês já foram batidas. Faturar as OS prontas (${BRL.format(P.tot[1])}) ainda melhora o caixa.`;
   else {
     const pl=P.basket.slice(0,5).map(x=>x.o.placa||'sem placa').join(', ')+(P.basket.length>5?' +'+(P.basket.length-5):'');
@@ -1364,13 +1388,13 @@ function planCard(){
     msg=`Cesta sugerida para hoje (${G.nome}): ${pl} somam ${BRL.format(P.bs)}${P.bs>=P.dayGoal?', cobrindo a meta do dia de '+BRL.format(P.dayGoal):', ainda abaixo da meta do dia de '+BRL.format(P.dayGoal)}. ${ready} já ${ready===1?'está finalizada':'estão finalizadas'} e só ${ready===1?'precisa':'precisam'} de nota; as outras dependem de concluir o serviço.`;
     msg+= c3>=M ? ` Para chegar à ${G.nome}, seria preciso faturar as ${P.cut+1} primeiras da fila (${BRL.format(P.list[P.cut].acc)}).` : ` Atenção: mesmo faturando todas as pendentes o mês fecha em ${p(c3)} da ${G.nome}. Para chegar lá é preciso entrar mais OS.`;
   }
-  const cls=G.batida||(!P.list.length)?'ok':(c3<M?'bad':'warn');
+  const cls=G.batida||(!P.list.length)||!G.hasMeta?'ok':(c3<M?'bad':'warn');
   return `<section class="card plan" id="planCard">
-    <div class="card-h"><h2>Plano de faturamento<small>Quais OS sem faturar do mês atacar primeiro, da mais pronta para a mais distante</small></h2></div>
+    <div class="card-h"><h2>Plano de faturamento <span class="ubadge ${PU}">${G.label}</span><small>Quais OS sem faturar do mês atacar primeiro, da mais pronta para a mais distante</small></h2><div class="seg" role="group" aria-label="Unidade"><button data-act="planU" data-v="sbc" aria-pressed="${PU==='sbc'}">SBC</button><button data-act="planU" data-v="maua" aria-pressed="${PU==='maua'}">Mauá</button></div></div>
     <div class="pmap"><div class="pmap-bar"><i class="s0" style="width:${w(base)}"></i><i class="s1" style="width:${w(P.tot[1])}"></i><i class="s2" style="width:${w(P.tot[2])}"></i><i class="s3" style="width:${w(P.tot[3])}"></i></div>
-      <div class="pmap-meta" style="left:${mp1}%"><span>meta 1 · ${BRL.format(M1)}</span></div>
-      ${M2>M1?`<div class="pmap-meta ${mp2>88?'r':''}" style="left:${mp2}%;background:var(--ink)"><span style="color:var(--ink)">meta 2 · ${BRL.format(M2)}</span></div>`:''}</div>
-    <div class="pleg"><span><b style="background:var(--ink)"></b>Já faturado ${BRL.format(base)} (${pct(base,M1)}% da meta 1)</span><span><b style="background:#2FA566"></b>Prontas</span><span><b style="background:#E8B923"></b>Em execução</span><span><b style="background:#C3CED7"></b>Dependem do cliente</span></div>
+      ${G.hasMeta?`<div class="pmap-meta" style="left:${mp1}%"><span>meta 1 · ${BRL.format(M1)}</span></div>`:''}
+      ${G.hasMeta&&M2>M1?`<div class="pmap-meta ${mp2>88?'r':''}" style="left:${mp2}%;background:var(--ink)"><span style="color:var(--ink)">meta 2 · ${BRL.format(M2)}</span></div>`:''}</div>
+    <div class="pleg"><span><b style="background:var(--ink)"></b>Já faturado ${BRL.format(base)}${G.hasMeta?' ('+pct(base,M1)+'% da meta 1)':''}</span><span><b style="background:#2FA566"></b>Prontas</span><span><b style="background:#E8B923"></b>Em execução</span><span><b style="background:#C3CED7"></b>Dependem do cliente</span></div>
     <div class="tiers">${tierCard(1,'1 · Prontas para faturar','finalizadas')}${tierCard(2,'2 · Em execução','autorizadas ou aguardando peças')}${tierCard(3,'3 · Dependem do cliente','orçamento ou aprovação')}</div>
     <div class="gband ${cls}" role="status"><p>${msg}</p></div>
     <div class="pl-list">${rows||''}</div>
@@ -1389,35 +1413,44 @@ function parseMoney(t){
   const n=parseFloat(s); return isNaN(n)?0:n*mul;
 }
 const fmtK=v=>v>=1000? 'R$ '+NF.format(Math.round(v/1000))+' mil' : BRL.format(v);
-function goalCalc(){
+function unitOf(o){ const n=norm(o.local); return n.includes('maua')?'maua':n.includes('sbc')?'sbc':'outra'; }
+function unitLabel(u){ return u==='maua'?'Mauá':'SBC'; }
+S.goalM={valor:0,valor2:0};
+try{ const g=JSON.parse(localStorage.getItem('tabc_goal_maua')||'null'); if(g) S.goalM={valor:+g.valor>0?+g.valor:0,valor2:+g.valor2>0?+g.valor2:0}; }catch(e){}
+function saveGoalM(){ try{ localStorage.setItem('tabc_goal_maua',JSON.stringify(S.goalM)); }catch(e){} }
+function goalOf(u){ return u==='maua'?S.goalM:S.goal; }
+function goalCalc(u){
+  u=u||'sbc';
   const y=NOW.getFullYear(), m=NOW.getMonth(), last=new Date(y,m+1,0).getDate(), hoje=NOW.getDate();
   const maxW=S.goal.sab?6:5; let tot=0,pas=0,res=0;
   for(let d=1;d<=last;d++){ const w=new Date(y,m,d).getDay(); if(w<1||w>maxW) continue; tot++; if(d<hoje) pas++; else res++; }
-  const k=monthKey(NOW), inM=CH.filter(o=>monthKey(o.base)===k&&!o.desist);
-  const fat=CH.filter(o=>o.fat&&!o.desist&&monthKey(billDate(o))===k), nf=inM.filter(o=>(!o.fat&&!o.desist));
+  const k=monthKey(NOW), inM=CH.filter(o=>unitOf(o)===u&&monthKey(o.base)===k&&!o.desist);
+  const fat=CH.filter(o=>unitOf(o)===u&&o.fat&&!o.desist&&monthKey(billDate(o))===k), nf=inM.filter(o=>(!o.fat&&!o.desist));
   const sum=a=>a.reduce((t,o)=>t+o.valor,0);
-  const m1=S.goal.valor, m2=Math.max(S.goal.valor2,m1), real=sum(fat), pend=sum(nf);
-  const b1=real>=m1, b2=real>=m2, alvo=b1?m2:m1;
+  const g=goalOf(u), m1=g.valor>0?g.valor:0, hasMeta=m1>0, m2=hasMeta?Math.max(g.valor2,m1):0, real=sum(fat), pend=sum(nf);
+  const b1=hasMeta&&real>=m1, b2=hasMeta&&real>=m2, alvo=b1?m2:m1;
   const falta1=Math.max(0,m1-real), falta2=Math.max(0,m2-real), falta=Math.max(0,alvo-real);
   const pd=f=>res>0? f/res : null;
   const esperado=tot? alvo*pas/tot : 0, ratio=esperado>0? real/esperado : 1;
-  let st = ratio>=1 ? 'ok' : ratio>=0.8 ? 'warn' : 'bad';
+  let st = !hasMeta?'none': ratio>=1 ? 'ok' : ratio>=0.8 ? 'warn' : 'bad';
   if(b1&&st==='bad') st='warn';
   if(b2) st='ok';
   const media=pas>0? real/pas : null, proj=media!=null? media*tot : null, ticket=fat.length? real/fat.length : null;
-  return {meta:alvo,m1,m2,b1,b2,nome:b1?'meta 2':'meta 1',real,pend,pendN:nf.length,falta,falta1,falta2,tot,pas,res,esperado,st,media,proj,ticket,
+  return {u,label:unitLabel(u),hasMeta,meta:alvo,m1,m2,b1,b2,nome:b1?'meta 2':'meta 1',real,pend,pendN:nf.length,falta,falta1,falta2,tot,pas,res,esperado,st,media,proj,ticket,
     porDia:pd(falta),porDia1:pd(falta1),porDia2:pd(falta2),fatN:fat.length,batida:b2,
     pctReal:pct(real,alvo),pct1:pct(real,m1),pct2:pct(real,m2),pctEsp:alvo>0? esperado/alvo*100 : 0,mes:monthLabel(k)};
 }
 function goalText(G){
   const f=BRL.format;
-  if(G.b2) return `Meta 2 batida! O Pitstop já faturou ${f(G.real)}, ${f(G.real-G.m2)} acima dos ${f(G.m2)}.`;
+  if(!G.hasMeta) return 'Meta de '+G.label+' ainda não definida. Faturado no mês: '+f(G.real)+'.';
+  if(G.m2<=G.m1){ if(G.b1) return `Meta de ${G.label} (${f(G.m1)}) batida! Faturado ${f(G.real)}.`; let t=`Para bater a meta de ${G.label} (${f(G.m1)}) faltam ${f(G.falta1)}`; if(G.res>0){ t+=`: é preciso faturar ${f(G.porDia1)} por dia útil (restam ${G.res}).`+(G.media!=null?` Hoje a média é ${f(G.media)} por dia útil.`:''); } else t+='. Não restam dias úteis neste mês.'; return t; }
+  if(G.b2) return `Meta 2 de ${G.label} batida! Já foram faturados ${f(G.real)}, ${f(G.real-G.m2)} acima dos ${f(G.m2)}.`;
   if(G.b1){
     let t=`Meta 1 (${f(G.m1)}) batida! Para a meta 2 (${f(G.m2)}) faltam ${f(G.falta2)}`;
     t+= G.res>0? `: é preciso faturar ${f(G.porDia2)} por dia útil (restam ${G.res}).`+(G.media!=null?` Hoje a média é ${f(G.media)} por dia útil.`:'') : '. Não restam dias úteis neste mês.';
     return t;
   }
-  let t=`Para bater a meta 1 (${f(G.m1)}) do Pitstop faltam ${f(G.falta1)}`;
+  let t=`Para bater a meta 1 (${f(G.m1)}) de ${G.label} faltam ${f(G.falta1)}`;
   if(G.res>0){
     t+=`: é preciso faturar ${f(G.porDia1)} por dia útil (restam ${G.res}).`;
     if(G.media!=null) t+=` Hoje a média é ${f(G.media)} por dia útil.`;
@@ -1426,35 +1459,55 @@ function goalText(G){
   } else t+='. Não restam dias úteis neste mês.';
   return t;
 }
-function goalCard(){
-  const G=goalCalc(), sc=G.m2, f=BRL.format;
+function goalCard(u){
+  u=u||'sbc'; const G=goalCalc(u), UL=unitLabel(u), sfx=u==='maua'?'M':''; if(!G.hasMeta) return goalCardNone(G,u);
+  const sc=G.m2, f=BRL.format;
   const pr=Math.min(100,G.real/sc*100), p1=G.m1/sc*100, pe=Math.min(100,G.esperado/sc*100);
-  const lab=G.b2?'Meta 2 batida':G.b1?(G.st==='ok'?'Meta 1 batida · meta 2 no ritmo':'Meta 1 batida · meta 2 abaixo do ritmo'):G.st==='ok'?'No ritmo':G.st==='warn'?'Quase no ritmo':'Abaixo do ritmo';
+  const one=G.m2<=G.m1; const lab=one?(G.b1?'Meta batida':G.st==='ok'?'No ritmo':G.st==='warn'?'Quase no ritmo':'Abaixo do ritmo'):G.b2?'Meta 2 batida':G.b1?(G.st==='ok'?'Meta 1 batida · meta 2 no ritmo':'Meta 1 batida · meta 2 abaixo do ritmo'):G.st==='ok'?'No ritmo':G.st==='warn'?'Quase no ritmo':'Abaixo do ritmo';
   const icon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>';
   const mk=G.esperado>0&&!G.b2? `<div class="th-mark ${pe<14?'l':pe>86?'r':''}" style="left:${pe}%"><span>ritmo de hoje · ${f(G.esperado)}</span></div>` : '';
   const stat=(l,v,s)=>`<div><small>${l}</small><b class="num">${v}</b><span>${s}</span></div>`;
   const z=p1/3;
   const trk=`background:linear-gradient(90deg,#F6D4D6 0 ${z}%,#FAEFC4 ${z}% ${2*z}%,#D3EBDD ${2*z}% ${p1}%,#EEF2F5 ${p1}% 100%)`;
-  return `<section class="card goal ${G.st}" id="goalCard">
-    <div class="card-h"><h2>Meta do mês · Pitstop<small>Faturado em ${G.mes} contra as duas metas</small></h2>
-      <div class="goal-ed"><label>Meta 1 <input id="goalV" type="text" inputmode="numeric" value="${f(G.m1)}" aria-label="Meta 1 do mês em reais"></label>
-      <label>Meta 2 <input id="goalV2" type="text" inputmode="numeric" value="${f(G.m2)}" aria-label="Meta 2 do mês em reais"></label>
-      <label><input id="goalS" type="checkbox" ${S.goal.sab?'checked':''}> Conta sábado</label></div></div>
-    <div class="goal-top"><div class="gv"><b class="num">${f(G.real)}</b><span>${G.pct1}% da meta 1 (${f(G.m1)}) · ${G.pct2}% da meta 2 (${f(G.m2)})</span></div>
+  return `<section class="card goal ${G.st}" id="goalCard${sfx}">
+    <div class="card-h"><h2>Meta do mês · Pitstop <span class="ubadge ${u}">${UL}</span><small>Faturado em ${G.mes} em ${UL}, contra as duas metas</small></h2>
+      <div class="goal-ed"><label>Meta 1 <input id="goalV${sfx}" type="text" inputmode="numeric" value="${f(G.m1)}" aria-label="Meta 1 do mês em reais"></label>
+      <label>Meta 2 <input id="goalV2${sfx}" type="text" inputmode="numeric" value="${u==='maua'&&!S.goalM.valor2?'':f(G.m2)}" placeholder="opcional" aria-label="Meta 2 do mês em reais"></label>
+      ${u==='sbc'?`<label><input id="goalS" type="checkbox" ${S.goal.sab?'checked':''}> Conta sábado</label>`:''}</div></div>
+    <div class="goal-top"><div class="gv"><b class="num">${f(G.real)}</b><span>${one?G.pct1+'% da meta ('+f(G.m1)+')':G.pct1+'% da meta 1 ('+f(G.m1)+') · '+G.pct2+'% da meta 2 ('+f(G.m2)+')'}</span></div>
       <span class="gst ${G.st}"><span class="dot"></span>${lab}</span></div>
     <div class="thermo"><div class="th-bulb"></div><div class="th-wrap"><div class="th-track" style="${trk}"><div class="th-ext" style="left:${p1}%"></div><div class="th-fill" style="width:${pr}%"></div></div>${mk}
       <div class="th-m1" style="left:${p1}%"></div>
-      <div class="th-scale2"><span class="a">R$ 0</span><span class="b" style="left:${p1}%">Meta 1<small>${fmtK(G.m1)}</small></span><span class="c">Meta 2<small>${fmtK(G.m2)}</small></span></div></div></div>
+      <div class="th-scale2"><span class="a">R$ 0</span><span class="b" style="left:${p1}%">Meta 1<small>${fmtK(G.m1)}</small></span>${one?'':`<span class="c">Meta 2<small>${fmtK(G.m2)}</small></span>`}</div></div></div>
     <div class="gband ${G.st}" role="status">${G.st==='bad'?'<span class="bell">'+icon+'</span>':icon}<p>${goalText(G)}</p></div>
     <div class="gstats">
       ${stat('Falta · meta 1',G.b1?'—':f(G.falta1),G.b1?'batida':G.pct1+'% concluído')}
       ${stat('Por dia útil · meta 1',G.b1?'—':G.porDia1!=null?f(G.porDia1):'—',G.res+' dias úteis restantes')}
-      ${stat('Falta · meta 2',G.b2?'—':f(G.falta2),G.b2?'batida':G.pct2+'% concluído')}
-      ${stat('Por dia útil · meta 2',G.b2?'—':G.porDia2!=null?f(G.porDia2):'—',G.res+' dias úteis restantes')}
+      ${one?'':stat('Falta · meta 2',G.b2?'—':f(G.falta2),G.b2?'batida':G.pct2+'% concluído')}
+      ${one?'':stat('Por dia útil · meta 2',G.b2?'—':G.porDia2!=null?f(G.porDia2):'—',G.res+' dias úteis restantes')}
       ${stat('Ritmo atual',G.media!=null?f(G.media):'—','por dia útil'+(G.ticket?' · ticket '+f(G.ticket):''))}
-      ${stat('Projeção do mês',G.proj!=null?f(G.proj):'—',G.proj!=null?pct(G.proj,G.m1)+'% da meta 1 · '+pct(G.proj,G.m2)+'% da meta 2':'sem dias fechados')}
+      ${stat('Projeção do mês',G.proj!=null?f(G.proj):'—',G.proj!=null?(one?pct(G.proj,G.m1)+'% da meta':pct(G.proj,G.m1)+'% da meta 1 · '+pct(G.proj,G.m2)+'% da meta 2'):'sem dias fechados')}
     </div>
     <p class="note">Conta só OS faturadas (coluna H = sim), no dia em que foram finalizadas; OS em aberto e desistências não entram. Dias úteis de segunda a ${S.goal.sab?'sábado':'sexta'}; feriados não são descontados. As metas ficam salvas neste navegador.</p>
+  </section>`;
+}
+
+
+function goalCardNone(G,u){
+  const f=BRL.format, UL=unitLabel(u), stat=(l,v,s)=>`<div><small>${l}</small><b class="num">${v}</b><span>${s}</span></div>`;
+  return `<section class="card goal" id="goalCardM">
+    <div class="card-h"><h2>Meta do mês · Pitstop <span class="ubadge ${u}">${UL}</span><small>Faturado em ${G.mes} · a meta de ${UL} ainda não foi definida</small></h2>
+      <div class="goal-ed"><label>Meta 1 <input id="goalVM" type="text" inputmode="numeric" value="" placeholder="definir" aria-label="Meta 1 de ${UL} em reais"></label>
+      <label>Meta 2 <input id="goalV2M" type="text" inputmode="numeric" value="" placeholder="definir" aria-label="Meta 2 de ${UL} em reais"></label></div></div>
+    <div class="goal-top"><div class="gv"><b class="num">${f(G.real)}</b><span>${G.fatN} ${G.fatN===1?'OS faturada':'OS faturadas'} em ${UL} · sem meta para comparar</span></div><span class="gst none"><span class="dot"></span>Meta não definida</span></div>
+    <div class="gband" style="animation:none;background:var(--card-2);color:var(--ink-2);box-shadow:none" role="status"><p>A meta de ${UL} é separada da de SBC e ainda não foi informada, então não há termômetro nem alerta. Quando souber o valor, digite em “Meta 1” (e “Meta 2”, se houver) acima: o painel passa a mostrar quanto falta e quanto faturar por dia útil. Enquanto isso, ${UL} mostra só o que já foi faturado.</p></div>
+    <div class="gstats">
+      ${stat('Faturado no mês',f(G.real),G.fatN+' OS')}
+      ${stat('Ticket médio',G.ticket?f(G.ticket):'—','por OS faturada')}
+      ${stat('Ritmo atual',G.media!=null?f(G.media):'—','por dia útil')}
+      ${stat('Projeção do mês',G.proj!=null?f(G.proj):'—','mantendo o ritmo atual')}
+    </div>
+    <p class="note">Conta só OS faturadas (coluna H = sim) da unidade ${UL}, no dia em que foram finalizadas. A meta fica salva neste navegador.</p>
   </section>`;
 }
 
@@ -1516,7 +1569,7 @@ function desCard(){
     <div class="gstats">
       ${stat('Desistências',D.n,D.clients+' '+(D.clients===1?'cliente diferente':'clientes diferentes'))}
       ${stat('% das OS do período',D.pctOS+'%',D.n+' de '+D.tot+' OS')}
-      ${stat('Valor que deixou de entrar',f(D.valor),D.pctVal+'% do valor das OS'+(S.desMode==='month'?' · '+pct(D.valor,G.m1)+'% da meta 1':''))}
+      ${stat('Valor que deixou de entrar',f(D.valor),D.pctVal+'% do valor das OS')}
     </div>
     <h2 style="margin:16px 0 4px;font-size:15px">Motivos</h2>
     <div>${rows}</div>
@@ -1529,6 +1582,7 @@ function desCard(){
 /* ============ RELATÓRIO IMPRESSO ============ */
 const BRL2=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
 function buildPrint(){
+  if(window.__prSt) return buildPrintStatus(window.__prSt);
   if(window.__prDay) return buildPrintDay(window.__prDay);
   const P=S.prt, base=osFiltered(), agg=stageAgg(base), list=base.filter(o=>P.st[o.open?o.last:6]!==false&&(!P.resp||norm(o.resp)===P.resp));
   const sum=a=>a.reduce((t,o)=>t+o.valor,0);
@@ -1553,7 +1607,7 @@ function buildPrint(){
     <div class="r"><small>Sem faturar</small><b>${BRL2.format(sum(nf))}</b></div>
     <div><small>Ciclo médio</small><b>${fmtH((()=>{const c=list.filter(o=>!o.open&&o.cycle!=null);return c.length?c.reduce((t,o)=>t+o.cycle,0)/c.length:null})())}</b></div>
   </div>
-  ${!P.sec.meta?'':(()=>{ const G=goalCalc(), f=BRL2.format, c=G.st==='ok'?'#2FA566':G.st==='warn'?'#E8B923':'#D0141B'; return `<div class="pr-goal" style="--g:${c}"><b>Meta do mês (${G.mes}): ${f(G.real)} · meta 1 ${f(G.m1)} (${G.pct1}%) · meta 2 ${f(G.m2)} (${G.pct2}%)</b><div class="bar"><i style="width:${Math.min(100,pct(G.real,G.m2))}%"></i></div>${esc(goalText(G))}</div>`; })()}
+  ${!P.sec.meta?'':['sbc','maua'].map(u=>{ const G=goalCalc(u), f=BRL2.format; if(!G.hasMeta) return `<div class="pr-goal" style="--g:#9FB0BE"><b>Meta ${G.label} (${G.mes}): faturado ${f(G.real)} · meta ainda não definida</b></div>`; const c=G.st==='ok'?'#2FA566':G.st==='warn'?'#E8B923':'#D0141B'; return `<div class="pr-goal" style="--g:${c}"><b>Meta ${G.label} (${G.mes}): ${f(G.real)} · meta 1 ${f(G.m1)} (${G.pct1}%) · meta 2 ${f(G.m2)} (${G.pct2}%)</b><div class="bar"><i style="width:${Math.min(100,pct(G.real,G.m2))}%"></i></div>${esc(goalText(G))}</div>`; }).join('')}
   ${!P.sec.nf?'':`<h2>Carros sem faturar <span><b>${nf.length}</b> · total <b>${BRL2.format(sum(nf))}</b></span></h2>
   ${tbl(h5,rNF,f5(nf.length,sum(nf)))}`}
   ${!P.sec.fat?'':`<h2>Carros faturados <span><b>${fat.length}</b> · total <b>${BRL2.format(sum(fat))}</b></span></h2>
@@ -1628,21 +1682,22 @@ function calCard(){
     cells+=`<button class="cal-d ${e?'has':''} ${k===todayK?'today':''} ${k===S.calSel?'sel':''}" data-act="calDay" data-v="${k}" aria-label="${d} de ${monthLabel(dKey(new Date(y,m,1)).slice(0,7))}${e?': '+e.n+' OS, '+f(e.v):': sem faturamento'}" aria-pressed="${k===S.calSel}"><i>${d}</i>${e?`<b class="num">${shortBRL(e.v)}</b>`:''}</button>`; }
   const sel=dayList(S.calSel), sv=sel.reduce((t,o)=>t+o.valor,0), [sy,sm,sd]=S.calSel.split('-').map(Number), sdt=new Date(sy,sm-1,sd);
   const dn=['domingo','segunda','terça','quarta','quinta','sexta','sábado'][sdt.getDay()];
-  const rows=sel.map(o=>`<div class="ag-row"><div class="nm"><b>${esc(o.placa||'Sem placa')}</b><span>${esc(titleCase(o.cliente)||'Sem cliente')}${o.os?' · OS '+esc(o.os):''}${o.servico?' · '+esc(o.servico):''}${o.resp?' · '+esc(o.resp):''}</span></div><div class="v num">${o.valor>0?f(o.valor):'—'}</div></div>`).join('');
+  const rows=sel.map(o=>`<div class="ag-row"><div class="nm"><b>${esc(o.placa||'Sem placa')}</b><span class="ub ${unitOf(o)}" style="display:inline-block">${unitLabel(unitOf(o))}</span><span>${esc(titleCase(o.cliente)||'Sem cliente')}${o.os?' · OS '+esc(o.os):''}${o.servico?' · '+esc(o.servico):''}${o.resp?' · '+esc(o.resp):''}</span></div><div class="v num">${o.valor>0?f(o.valor):'—'}</div></div>`).join('');
+  const uS=sel.filter(o=>unitOf(o)==='sbc'), uM=sel.filter(o=>unitOf(o)==='maua'), sumv=a=>a.reduce((t,o)=>t+o.valor,0);
   return `<section class="card" id="calCard">
     <div class="cal-h"><div><h2 style="margin:0">Faturado por dia<small>Toque num dia para ver o que foi faturado e imprimir só aquele dia</small></h2></div>
       <div class="cal-nav"><button data-act="calNav" data-v="-1" aria-label="Mês anterior">‹</button><b>${monthLabel(dKey(new Date(y,m,1)).slice(0,7))}</b><button data-act="calNav" data-v="1" aria-label="Próximo mês">›</button><button data-act="calToday">Hoje</button></div></div>
     <div class="cal-g">${wk}${cells}</div>
     <p class="note" style="margin:0">No mês: <b>${f(mv)}</b> em ${mn} OS faturadas.</p>
-    <div class="cal-day"><div class="ct"><div><b>${String(sd).padStart(2,'0')}/${String(sm).padStart(2,'0')}/${sy} · ${dn}</b><span>${sel.length?`<b class="num" style="font-size:15px">${f(sv)}</b> faturados · ${sel.length} ${sel.length===1?'OS':'OS'}`:'Nenhuma OS faturada neste dia'}</span></div>
+    <div class="cal-day"><div class="ct"><div><b>${String(sd).padStart(2,'0')}/${String(sm).padStart(2,'0')}/${sy} · ${dn}</b><span>${sel.length?`<b class="num" style="font-size:15px">${f(sv)}</b> faturados · ${sel.length} ${sel.length===1?'OS':'OS'} · <span class="ubadge sbc" style="margin:0 4px 0 6px">SBC</span>${f(sumv(uS))} <span class="ubadge maua" style="margin:0 4px 0 6px">Mauá</span>${f(sumv(uM))}`:'Nenhuma OS faturada neste dia'}</span></div>
       ${sel.length?`<button data-act="printDay">Imprimir relatório do dia</button>`:''}</div>${rows}</div>
   </section>`;
 }
 function buildPrintDay(key){
   const sel=dayList(key), f=BRL2.format, sv=sel.reduce((t,o)=>t+o.valor,0), [sy,sm,sd]=key.split('-').map(Number), sdt=new Date(sy,sm-1,sd);
   const dn=['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'][sdt.getDay()];
-  const rows=sel.map(o=>`<tr><td class="pl">${esc(o.placa||'—')}</td><td>${esc(o.cliente||'Sem cliente')}${o.os?'<br><small>OS '+esc(o.os)+'</small>':''}${o.servico?'<br><small>Serviço: '+esc(o.servico)+'</small>':''}</td><td>${esc(o.resp||'—')}</td><td class="n">${f(o.valor)}</td></tr>`);
-  const G=goalCalc();
+  const rows=sel.map(o=>`<tr><td class="pl">${esc(o.placa||'—')}</td><td>${esc(o.cliente||'Sem cliente')}${o.os?'<br><small>OS '+esc(o.os)+'</small>':''}${o.servico?'<br><small>Serviço: '+esc(o.servico)+'</small>':''}</td><td>${esc(o.local||'—')}</td><td>${esc(o.resp||'—')}</td><td class="n">${f(o.valor)}</td></tr>`);
+  const GS=goalCalc('sbc'), GM=goalCalc('maua'), dS=sel.filter(o=>unitOf(o)==='sbc').reduce((t,o)=>t+o.valor,0), dM=sel.filter(o=>unitOf(o)==='maua').reduce((t,o)=>t+o.valor,0);
   $('#printRoot').innerHTML=`
   <div class="pr-head"><span class="logo" role="img" aria-label="Truck Center ABC"></span><div><h1>Pitstop · Faturado do dia</h1><p>${String(sd).padStart(2,'0')}/${String(sm).padStart(2,'0')}/${sy} · ${dn} · emitido em ${fmtDT(new Date())}</p></div></div>
   ${S.demo?'<div class="pr-demo">Atenção: este relatório usa dados de demonstração (fictícios). Desligue "Demonstração" no painel para imprimir só o que está na planilha.</div>':''}
@@ -1650,11 +1705,11 @@ function buildPrintDay(key){
     <div><small>OS faturadas</small><b>${sel.length}</b></div>
     <div><small>Total faturado no dia</small><b>${f(sv)}</b></div>
     <div><small>Ticket médio</small><b>${sel.length?f(sv/sel.length):'—'}</b></div>
-    <div><small>Faturado no mês</small><b>${f(G.real)}</b></div>
-    <div><small>Meta 1 (${f(G.m1)})</small><b>${G.pct1}%</b></div>
+    <div><small>SBC no dia</small><b>${f(dS)}</b></div>
+    <div><small>Mauá no dia</small><b>${f(dM)}</b></div>
   </div>
   <h2>Carros faturados <span><b>${sel.length}</b> · total <b>${f(sv)}</b></span></h2>
-  ${sel.length?`<table class="pr-t"><thead><tr><th>Placa</th><th>Cliente</th><th>Responsável</th><th class="n">Valor</th></tr></thead><tbody>${rows.join('')}</tbody><tfoot><tr><td colspan="3">Total · ${sel.length} ${sel.length===1?'carro':'carros'}</td><td class="n">${f(sv)}</td></tr></tfoot></table>`:'<div class="pr-empty">Nenhuma OS faturada neste dia.</div>'}
+  ${sel.length?`<table class="pr-t"><thead><tr><th>Placa</th><th>Cliente</th><th>Unidade</th><th>Responsável</th><th class="n">Valor</th></tr></thead><tbody>${rows.join('')}</tbody><tfoot><tr><td colspan="4">Total · ${sel.length} ${sel.length===1?'carro':'carros'}</td><td class="n">${f(sv)}</td></tr></tfoot></table>`:'<div class="pr-empty">Nenhuma OS faturada neste dia.</div>'}
   <div class="pr-foot">Truck Center ABC · Pitstop · Faturado do dia · uso interno</div>`;
 }
 window.addEventListener('afterprint',()=>{ window.__prDay=null; });
@@ -1666,8 +1721,71 @@ document.addEventListener('click',e=>{
   if(a==='printDay'){ window.__prDay=S.calSel; buildPrintDay(S.calSel); setTimeout(()=>window.print(),80); return; }
 });
 
+
+/* ============ RELATÓRIO POR STATUS ============ */
+S.stp={st:'2',per:'month',svc:true};
+function stCalc(i,per){
+  const k=monthKey(NOW), loc=o=>S.local==='all'||norm(o.local)===S.local;
+  const pool=CH.filter(loc);
+  const set=per==='all'?pool.filter(o=>!o.desist):pool.filter(o=>monthKey(o.base)===k&&!o.desist);
+  const open=set.filter(o=>o.open), agg=stageAgg(set);
+  const rows=open.filter(o=>o.last===i).sort((a,b)=>b.openMs-a.openMs);
+  const extra=per==='all'?0:pool.filter(o=>o.open&&!o.desist&&o.last===i&&monthKey(o.base)!==k).length;
+  const sum=a=>a.reduce((t,o)=>t+o.valor,0);
+  return {i,rows,set,open,agg,n:rows.length,total:set.length,placas:new Set(rows.map(o=>norm(o.placa)||('os'+o.os))).size,
+    pctOS:pct(rows.length,set.length),pctOpen:pct(rows.length,open.length),valor:sum(rows),
+    avg:rows.length?rows.reduce((t,o)=>t+o.openMs,0)/rows.length:null,oldest:rows[0]?rows[0].openMs:null,extra};
+}
+function stModalHtml(){
+  const P=S.stp;
+  const opts=[0,1,2,3,4,5].map(i=>{ const c=stCalc(i,P.per); return `<option value="${i}" ${P.st===String(i)?'selected':''}>${STAGES[i]} (${c.n} OS)</option>`; }).join('')+`<option value="all" ${P.st==='all'?'selected':''}>Todos os status (uma página para cada)</option>`;
+  return `<div class="box" role="dialog" aria-label="Relatório por status">
+    <h3>Imprimir por status</h3><p class="sub">Uma folha por status, para cobrar o setor: quantos carros estão com ele, quanto isso representa e de quem são.</p>
+    <h4>Status</h4><select data-sk="st">${opts}</select>
+    <h4>Período</h4><div class="opts"><label class="opt"><input type="radio" name="stper" data-sk="per" value="month" ${P.per==='month'?'checked':''}> Só o mês atual</label><label class="opt"><input type="radio" name="stper" data-sk="per" value="all" ${P.per==='all'?'checked':''}> Todos os meses</label></div>
+    <h4>Detalhes</h4><div class="opts"><label class="opt"><input type="checkbox" data-sk="svc" ${P.svc?'checked':''}> Mostrar o serviço de cada OS</label></div>
+    <div class="cnt">No mês atual, as OS em andamento por status aparecem entre parênteses acima. A porcentagem é sobre o total de OS do período escolhido.</div>
+    <div class="acts"><button data-act="prClose">Cancelar</button><button class="go" data-act="stGo">Imprimir / salvar PDF</button></div></div>`;
+}
+function stOpen(){
+  let m=document.getElementById('prModal'); if(!m){ m=document.createElement('div'); m.id='prModal'; document.body.appendChild(m); m.addEventListener('click',e=>{ if(e.target===m) prClose(); }); }
+  m.innerHTML=stModalHtml(); m.classList.add('on');
+}
+function buildPrintStatus(P){
+  const f=BRL2.format, per=P.per, mes=per==='all'?'todos os meses':monthLabel(monthKey(NOW));
+  const un=S.local==='all'?'todas as unidades':((CH.find(o=>norm(o.local)===S.local)||{}).local||S.local);
+  const idx=P.st==='all'?[0,1,2,3,4,5].filter(i=>stCalc(i,per).n>0):[+P.st];
+  const head=`<div class="pr-head"><span class="logo" role="img" aria-label="Truck Center ABC"></span><div><h1>Pitstop · Relatório por status</h1><p>Período: ${mes} · ${esc(un)} · emitido em ${fmtDT(new Date())}</p></div></div>${S.demo?'<div class="pr-demo">Atenção: este relatório usa dados de demonstração (fictícios). Desligue "Demonstração" no painel para imprimir só o que está na planilha.</div>':''}`;
+  if(!idx.length){ $('#printRoot').innerHTML=head+'<div class="pr-empty">Nenhuma OS em andamento nos status escolhidos.</div>'; return; }
+  const sec=idx.map((i,k)=>{
+    const c=stCalc(i,per);
+    const rows=c.rows.map(o=>{ const late=isLate(o,c.agg); return `<tr><td class="pl">${esc(o.placa||'—')}</td><td>${esc(o.cliente||'Sem cliente')}${o.os?'<br><small>OS '+esc(o.os)+'</small>':''}${P.svc&&o.servico?'<br><small>Serviço: '+esc(o.servico)+'</small>':''}</td><td>${esc(o.resp||'—')}</td><td>${fmtDate(o.base)}</td><td class="n ${late?'red':''}">${fmtH(o.openMs)}</td><td class="n">${o.valor>0?f(o.valor):'—'}</td></tr>`; }).join('');
+    return `<div class="${k?'pr-page':''}">
+    ${k?head:''}
+    <h2>${esc(STAGES[i])} <span><b>${c.n}</b> ${c.n===1?'OS':'OS'} · <b>${f(c.valor)}</b></span></h2>
+    <div class="pr-big"><div class="p">${c.pctOS}%</div><div class="t"><b>${c.n} ${c.n===1?'carro está':'carros estão'} em “${esc(STAGES[i])}”</b>, o que representa <b>${c.pctOS}%</b> das ${c.total} OS ${per==='all'?'registradas':'que entraram em '+mes}, e ${c.pctOpen}% de todas as OS em andamento (${c.open.length}).${c.extra?` Há ainda ${c.extra} ${c.extra===1?'OS':'OS'} de meses anteriores nesta etapa, fora desta conta.`:''}</div></div>
+    <div class="pr-kpis" style="grid-template-columns:repeat(4,1fr)"><div><small>OS nesta etapa</small><b>${c.n}</b></div><div><small>Placas</small><b>${c.placas}</b></div><div class="r"><small>Valor parado</small><b>${f(c.valor)}</b></div><div><small>Mais antiga parada há</small><b>${fmtH(c.oldest)}</b></div></div>
+    <table class="pr-t"><thead><tr><th>Placa</th><th>Cliente</th><th>Responsável</th><th>Entrada</th><th class="n">Parado há</th><th class="n">Valor</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="4">Total · ${c.n} ${c.n===1?'carro':'carros'} · média parado há ${fmtH(c.avg)}</td><td class="n"></td><td class="n">${f(c.valor)}</td></tr></tfoot></table>
+    <p style="font-size:10px;color:#5B6772;margin:6px 0 0">Tempo em vermelho = acima da meta da etapa (ou 1,5× a média, se não houver meta).${c.rows.some(o=>!(o.valor>0))?' OS sem valor preenchido aparecem com “—”.':''}</p>
+    <div class="pr-sign"><div>Responsável pelo setor</div><div>Prazo de retorno</div><div>Data</div></div></div>`; }).join('');
+  $('#printRoot').innerHTML=head.replace(/$/,'')+'' + sec.replace(/^<div class="">\s*/,'<div>') + `<div class="pr-foot">Truck Center ABC · Pitstop · Relatório por status · uso interno</div>`;
+}
+window.addEventListener('afterprint',()=>{ window.__prSt=null; });
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]'); if(!b) return; const a=b.dataset.act;
+  if(a==='stOpen'){ stOpen(); return; }
+  if(a==='stGo'){ prClose(); window.__prSt={...S.stp}; buildPrintStatus(window.__prSt); setTimeout(()=>window.print(),80); return; }
+});
+document.addEventListener('change',e=>{
+  const t=e.target; if(!t.dataset||!t.dataset.sk) return;
+  const k=t.dataset.sk;
+  if(k==='svc') S.stp.svc=t.checked; else S.stp[k]=t.value;
+  if(k==='per'){ const m=document.getElementById('prModal'); if(m) m.innerHTML=stModalHtml(); }
+});
+
 /* ============ NAVEGAÇÃO ============ */
-function viewSaude(){ return `${demoNote()}${goalCard()}${calCard()}${planCard()}${resCard()}${desCard()}`; }
+function unitsNote(){ const o=CH.filter(x=>unitOf(x)==='outra'&&x.fat).length; return `<div class="units-note"><span><b>SBC</b> e <b>Mauá</b> têm metas diferentes e são acompanhadas separadamente.</span>${o?`<span style="color:var(--muted)">${o} OS faturadas sem unidade preenchida não entram em nenhuma meta.</span>`:''}</div>`; }
+function viewSaude(){ return `${demoNote()}${unitsNote()}${goalCard('sbc')}${goalCard('maua')}${calCard()}${planCard()}${resCard()}${desCard()}`; }
 const VIEWS={resumo:viewResumo,saude:viewSaude,etapas:viewEtapas,fatura:viewFatura,valet:viewValet,visitas:viewVisitas,recompra:viewRecompra};
 function render(){
   $('#tabs').innerHTML=TABS.map(([k,n])=>`<button class="tab" role="tab" data-act="tab" data-v="${k}" aria-selected="${S.tab===k}">${n}</button>`).join('');
@@ -1693,6 +1811,7 @@ function setTab(v){S.anim=true;S.tab=v;S.shown={os:12,rec:40};S.openOs=null;rend
 document.addEventListener('click',e=>{
   const b=e.target.closest('[data-act]'); if(!b) return;
   const a=b.dataset.act, v=b.dataset.v;
+  if(a==='planU'){ S.planU=v; return render(); }
   if(a==='desMode'){ S.desMode=v; return render(); }
   if(a==='aged'){ S.aged=+v; S.agedAll=false; return render(); }
   if(a==='agedAll'){ S.agedAll=!S.agedAll; return render(); }
@@ -1720,6 +1839,8 @@ document.addEventListener('change',e=>{
   const id=e.target.id;
   if(id==='goalV'){ const v=parseMoney(e.target.value); if(v>0){ S.goal.valor=v; saveGoal(); } render(); }
   else if(id==='goalV2'){ const v=parseMoney(e.target.value); if(v>0){ S.goal.valor2=v; saveGoal(); } render(); }
+  else if(id==='goalVM'){ const v=parseMoney(e.target.value); S.goalM.valor=v>0?v:0; saveGoalM(); render(); }
+  else if(id==='goalV2M'){ const v=parseMoney(e.target.value); S.goalM.valor2=v>0?v:0; saveGoalM(); render(); }
   else if(id==='goalS'){ S.goal.sab=e.target.checked; saveGoal(); render(); }
   else if(/^mt[0-5]$/.test(id)){ const v=parseFloat(String(e.target.value).replace(',','.')); S.meta[+id[2]]=v>0?v:null; saveMeta(); render(); }
   else if(id==='fMes'){S.month=e.target.value;S.shown={os:12,rec:40};render();}
