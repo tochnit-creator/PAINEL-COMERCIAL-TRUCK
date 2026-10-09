@@ -427,6 +427,32 @@ main.enter .cols .d i{animation:rise .6s ease both}
 .os-d .sv b{font-weight:600;overflow-wrap:anywhere}
 .os-d .sv.none b{color:var(--muted);font-weight:400}
 
+
+.cal-h{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.cal-nav{display:inline-flex;align-items:center;gap:6px}
+.cal-nav button{border:1px solid var(--line);background:var(--card-2);border-radius:8px;padding:6px 11px;font:600 13px var(--f-body);cursor:pointer;color:var(--ink)}
+.cal-nav button:hover{background:var(--ice-2)}
+.cal-nav b{font:700 15px var(--f-display);letter-spacing:.05em;text-transform:uppercase;min-width:150px;text-align:center}
+.cal-g{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.cal-w{font:600 10.5px var(--f-body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:center;padding:2px 0}
+.cal-d{border:0;border-radius:8px;background:var(--card-2);min-height:46px;padding:4px 3px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;cursor:pointer;color:var(--ink);font-family:var(--f-body)}
+.cal-d i{font-style:normal;font-size:11px;color:var(--muted);line-height:1}
+.cal-d b{font:700 12px/1.1 var(--f-display);letter-spacing:.01em;white-space:nowrap}
+.cal-d.has{background:rgba(47,165,102,.16)}
+.cal-d.has i{color:#1f7a4c}
+.cal-d.out{background:transparent;cursor:default}
+.cal-d.today{box-shadow:inset 0 0 0 2px var(--red)}
+.cal-d.sel{background:var(--ink);color:#fff}
+.cal-d.sel i{color:#cfd6dc}
+.cal-d:focus-visible{outline:3px solid var(--red);outline-offset:1px}
+.cal-day{margin-top:4px;border-top:1px solid var(--line);padding-top:12px}
+.cal-day .ct{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.cal-day .ct b{font:700 18px var(--f-display);letter-spacing:.03em}
+.cal-day .ct span{display:block;color:var(--muted);font-size:13px}
+.cal-day .ct button{border-radius:8px;border:1px solid var(--red);background:var(--red);color:#fff;padding:8px 14px;font:700 13px var(--f-body);cursor:pointer}
+.cal-day .ct button:hover{background:var(--red-dark)}
+@media(max-width:480px){.cal-d{min-height:42px}.cal-d b{font-size:10.5px}.cal-nav b{min-width:120px}}
+
 #printRoot{display:none}
 @media print{
   @page{size:A4;margin:12mm 12mm 14mm}
@@ -1368,7 +1394,7 @@ function goalCalc(){
   const maxW=S.goal.sab?6:5; let tot=0,pas=0,res=0;
   for(let d=1;d<=last;d++){ const w=new Date(y,m,d).getDay(); if(w<1||w>maxW) continue; tot++; if(d<hoje) pas++; else res++; }
   const k=monthKey(NOW), inM=CH.filter(o=>monthKey(o.base)===k&&!o.desist);
-  const fat=inM.filter(o=>o.fat), nf=inM.filter(o=>(!o.fat&&!o.desist));
+  const fat=CH.filter(o=>o.fat&&!o.desist&&monthKey(billDate(o))===k), nf=inM.filter(o=>(!o.fat&&!o.desist));
   const sum=a=>a.reduce((t,o)=>t+o.valor,0);
   const m1=S.goal.valor, m2=Math.max(S.goal.valor2,m1), real=sum(fat), pend=sum(nf);
   const b1=real>=m1, b2=real>=m2, alvo=b1?m2:m1;
@@ -1428,7 +1454,7 @@ function goalCard(){
       ${stat('Ritmo atual',G.media!=null?f(G.media):'—','por dia útil'+(G.ticket?' · ticket '+f(G.ticket):''))}
       ${stat('Projeção do mês',G.proj!=null?f(G.proj):'—',G.proj!=null?pct(G.proj,G.m1)+'% da meta 1 · '+pct(G.proj,G.m2)+'% da meta 2':'sem dias fechados')}
     </div>
-    <p class="note">Ainda sem faturar neste mês: ${f(G.pend)} (${G.pendN} OS)${G.pend>0&&!G.b2?' — se tudo for faturado, chega a '+pct(G.real+G.pend,G.m1)+'% da meta 1 e '+pct(G.real+G.pend,G.m2)+'% da meta 2':''}. OS com desistência não entram. Conta dias úteis de segunda a ${S.goal.sab?'sábado':'sexta'}; feriados não são descontados. As metas ficam salvas neste navegador.</p>
+    <p class="note">Conta só OS faturadas (coluna H = sim), no dia em que foram finalizadas; OS em aberto e desistências não entram. Dias úteis de segunda a ${S.goal.sab?'sábado':'sexta'}; feriados não são descontados. As metas ficam salvas neste navegador.</p>
   </section>`;
 }
 
@@ -1503,6 +1529,7 @@ function desCard(){
 /* ============ RELATÓRIO IMPRESSO ============ */
 const BRL2=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
 function buildPrint(){
+  if(window.__prDay) return buildPrintDay(window.__prDay);
   const P=S.prt, base=osFiltered(), agg=stageAgg(base), list=base.filter(o=>P.st[o.open?o.last:6]!==false&&(!P.resp||norm(o.resp)===P.resp));
   const sum=a=>a.reduce((t,o)=>t+o.valor,0);
   const fat=list.filter(o=>o.fat).sort((a,b)=>b.valor-a.valor), nf=list.filter(o=>(!o.fat&&!o.desist)).sort((a,b)=>b.valor-a.valor);
@@ -1584,8 +1611,63 @@ document.addEventListener('change',e=>{
   savePrt(); prUpd();
 });
 
+
+/* ============ CALENDÁRIO DE FATURAMENTO ============ */
+function billDate(o){ return o.ts&&o.ts[6]?o.ts[6]:o.base; }
+function dKey(d){ const p=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); }
+function billedMap(){ const m=new Map(); for(const o of CH){ if(!o.fat||o.desist) continue; const k=dKey(billDate(o)); const e=m.get(k)||{n:0,v:0,list:[]}; e.n++; e.v+=o.valor; e.list.push(o); m.set(k,e); } return m; }
+function shortBRL(v){ return v>=1000?(v/1000).toFixed(v>=10000?0:1).replace('.',',')+'k':String(Math.round(v)); }
+S.calM=new Date(NOW.getFullYear(),NOW.getMonth(),1); S.calSel=dKey(NOW);
+function dayList(key){ const e=billedMap().get(key); return e?e.list.slice().sort((a,b)=>b.valor-a.valor):[]; }
+function calCard(){
+  const f=BRL.format, bm=billedMap(), y=S.calM.getFullYear(), m=S.calM.getMonth(), nd=new Date(y,m+1,0).getDate(), first=new Date(y,m,1).getDay(), todayK=dKey(NOW);
+  let mv=0,mn=0; for(let d=1;d<=nd;d++){ const e=bm.get(dKey(new Date(y,m,d))); if(e){ mv+=e.v; mn+=e.n; } }
+  const wk=['dom','seg','ter','qua','qui','sex','sáb'].map(w=>`<div class="cal-w">${w}</div>`).join('');
+  let cells=''; for(let i=0;i<first;i++) cells+='<div class="cal-d out"></div>';
+  for(let d=1;d<=nd;d++){ const k=dKey(new Date(y,m,d)), e=bm.get(k);
+    cells+=`<button class="cal-d ${e?'has':''} ${k===todayK?'today':''} ${k===S.calSel?'sel':''}" data-act="calDay" data-v="${k}" aria-label="${d} de ${monthLabel(dKey(new Date(y,m,1)).slice(0,7))}${e?': '+e.n+' OS, '+f(e.v):': sem faturamento'}" aria-pressed="${k===S.calSel}"><i>${d}</i>${e?`<b class="num">${shortBRL(e.v)}</b>`:''}</button>`; }
+  const sel=dayList(S.calSel), sv=sel.reduce((t,o)=>t+o.valor,0), [sy,sm,sd]=S.calSel.split('-').map(Number), sdt=new Date(sy,sm-1,sd);
+  const dn=['domingo','segunda','terça','quarta','quinta','sexta','sábado'][sdt.getDay()];
+  const rows=sel.map(o=>`<div class="ag-row"><div class="nm"><b>${esc(o.placa||'Sem placa')}</b><span>${esc(titleCase(o.cliente)||'Sem cliente')}${o.os?' · OS '+esc(o.os):''}${o.servico?' · '+esc(o.servico):''}${o.resp?' · '+esc(o.resp):''}</span></div><div class="v num">${o.valor>0?f(o.valor):'—'}</div></div>`).join('');
+  return `<section class="card" id="calCard">
+    <div class="cal-h"><div><h2 style="margin:0">Faturado por dia<small>Toque num dia para ver o que foi faturado e imprimir só aquele dia</small></h2></div>
+      <div class="cal-nav"><button data-act="calNav" data-v="-1" aria-label="Mês anterior">‹</button><b>${monthLabel(dKey(new Date(y,m,1)).slice(0,7))}</b><button data-act="calNav" data-v="1" aria-label="Próximo mês">›</button><button data-act="calToday">Hoje</button></div></div>
+    <div class="cal-g">${wk}${cells}</div>
+    <p class="note" style="margin:0">No mês: <b>${f(mv)}</b> em ${mn} OS faturadas.</p>
+    <div class="cal-day"><div class="ct"><div><b>${String(sd).padStart(2,'0')}/${String(sm).padStart(2,'0')}/${sy} · ${dn}</b><span>${sel.length?`<b class="num" style="font-size:15px">${f(sv)}</b> faturados · ${sel.length} ${sel.length===1?'OS':'OS'}`:'Nenhuma OS faturada neste dia'}</span></div>
+      ${sel.length?`<button data-act="printDay">Imprimir relatório do dia</button>`:''}</div>${rows}</div>
+  </section>`;
+}
+function buildPrintDay(key){
+  const sel=dayList(key), f=BRL2.format, sv=sel.reduce((t,o)=>t+o.valor,0), [sy,sm,sd]=key.split('-').map(Number), sdt=new Date(sy,sm-1,sd);
+  const dn=['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'][sdt.getDay()];
+  const rows=sel.map(o=>`<tr><td class="pl">${esc(o.placa||'—')}</td><td>${esc(o.cliente||'Sem cliente')}${o.os?'<br><small>OS '+esc(o.os)+'</small>':''}${o.servico?'<br><small>Serviço: '+esc(o.servico)+'</small>':''}</td><td>${esc(o.resp||'—')}</td><td class="n">${f(o.valor)}</td></tr>`);
+  const G=goalCalc();
+  $('#printRoot').innerHTML=`
+  <div class="pr-head"><span class="logo" role="img" aria-label="Truck Center ABC"></span><div><h1>Pitstop · Faturado do dia</h1><p>${String(sd).padStart(2,'0')}/${String(sm).padStart(2,'0')}/${sy} · ${dn} · emitido em ${fmtDT(new Date())}</p></div></div>
+  ${S.demo?'<div class="pr-demo">Atenção: este relatório usa dados de demonstração (fictícios). Desligue "Demonstração" no painel para imprimir só o que está na planilha.</div>':''}
+  <div class="pr-kpis">
+    <div><small>OS faturadas</small><b>${sel.length}</b></div>
+    <div><small>Total faturado no dia</small><b>${f(sv)}</b></div>
+    <div><small>Ticket médio</small><b>${sel.length?f(sv/sel.length):'—'}</b></div>
+    <div><small>Faturado no mês</small><b>${f(G.real)}</b></div>
+    <div><small>Meta 1 (${f(G.m1)})</small><b>${G.pct1}%</b></div>
+  </div>
+  <h2>Carros faturados <span><b>${sel.length}</b> · total <b>${f(sv)}</b></span></h2>
+  ${sel.length?`<table class="pr-t"><thead><tr><th>Placa</th><th>Cliente</th><th>Responsável</th><th class="n">Valor</th></tr></thead><tbody>${rows.join('')}</tbody><tfoot><tr><td colspan="3">Total · ${sel.length} ${sel.length===1?'carro':'carros'}</td><td class="n">${f(sv)}</td></tr></tfoot></table>`:'<div class="pr-empty">Nenhuma OS faturada neste dia.</div>'}
+  <div class="pr-foot">Truck Center ABC · Pitstop · Faturado do dia · uso interno</div>`;
+}
+window.addEventListener('afterprint',()=>{ window.__prDay=null; });
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]'); if(!b) return; const a=b.dataset.act, v=b.dataset.v;
+  if(a==='calDay'){ S.calSel=v; return render(); }
+  if(a==='calNav'){ S.calM=new Date(S.calM.getFullYear(),S.calM.getMonth()+(+v),1); return render(); }
+  if(a==='calToday'){ S.calM=new Date(NOW.getFullYear(),NOW.getMonth(),1); S.calSel=dKey(NOW); return render(); }
+  if(a==='printDay'){ window.__prDay=S.calSel; buildPrintDay(S.calSel); setTimeout(()=>window.print(),80); return; }
+});
+
 /* ============ NAVEGAÇÃO ============ */
-function viewSaude(){ return `${demoNote()}${goalCard()}${planCard()}${resCard()}${desCard()}`; }
+function viewSaude(){ return `${demoNote()}${goalCard()}${calCard()}${planCard()}${resCard()}${desCard()}`; }
 const VIEWS={resumo:viewResumo,saude:viewSaude,etapas:viewEtapas,fatura:viewFatura,valet:viewValet,visitas:viewVisitas,recompra:viewRecompra};
 function render(){
   $('#tabs').innerHTML=TABS.map(([k,n])=>`<button class="tab" role="tab" data-act="tab" data-v="${k}" aria-selected="${S.tab===k}">${n}</button>`).join('');
