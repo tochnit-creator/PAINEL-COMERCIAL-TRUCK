@@ -451,6 +451,16 @@ main.enter .cols .d i{animation:rise .6s ease both}
 .cal-day .ct span{display:block;color:var(--muted);font-size:13px}
 .cal-day .ct button{border-radius:8px;border:1px solid var(--red);background:var(--red);color:#fff;padding:8px 14px;font:700 13px var(--f-body);cursor:pointer}
 .cal-day .ct button:hover{background:var(--red-dark)}
+.cal-d .cu{display:block;font:700 11px/1.15 var(--f-display);white-space:nowrap}
+.cal-d .cu em{font-style:normal;font-weight:700;font-size:9px;margin-right:2px;color:var(--ink)}
+.cal-d .cu em.m{color:var(--red)}
+.cal-d.sel .cu em.s{color:#fff}.cal-d.sel .cu em.m{color:#ff8a8f}
+.cal-d.has.two{min-height:54px}
+.cal-grp{margin-top:10px}
+.cal-grp .gh{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:2px solid var(--ink);margin-bottom:2px}
+.cal-grp .gh b{font:700 15px var(--f-display)}.cal-grp .gh span:last-child{color:var(--muted);font-size:13px}
+.cal-mon{display:flex;gap:14px;flex-wrap:wrap}
+@media(max-width:480px){.cal-d .cu{font-size:9.5px}.cal-d .cu em{font-size:8px}.cal-d.has.two{min-height:50px}}
 @media(max-width:480px){.cal-d{min-height:42px}.cal-d b{font-size:10.5px}.cal-nav b{min-width:120px}}
 
 
@@ -1747,25 +1757,30 @@ function dKey(d){ const p=n=>String(n).padStart(2,'0'); return d.getFullYear()+'
 function billedMap(){ const m=new Map(); for(const o of CH){ if(!o.fat||o.desist) continue; const k=dKey(billDate(o)); const e=m.get(k)||{n:0,v:0,list:[]}; e.n++; e.v+=o.valor; e.list.push(o); m.set(k,e); } return m; }
 function shortBRL(v){ return v>=1000?(v/1000).toFixed(v>=10000?0:1).replace('.',',')+'k':String(Math.round(v)); }
 S.calM=new Date(NOW.getFullYear(),NOW.getMonth(),1); S.calSel=dKey(NOW);
+function unitSums(e){ const r={sbc:{v:0,n:0},maua:{v:0,n:0},outra:{v:0,n:0}}; if(e) for(const o of e.list){ const u=unitOf(o); r[u].v+=o.valor; r[u].n++; } return r; }
+function calUnits(e){ const u=unitSums(e); return (u.sbc.n?`<b class="num cu"><em class="s">S</em>${shortBRL(u.sbc.v)}</b>`:'')+(u.maua.n?`<b class="num cu"><em class="m">M</em>${shortBRL(u.maua.v)}</b>`:'')+(u.outra.n?`<b class="num cu"><em class="s">+</em>${shortBRL(u.outra.v)}</b>`:''); }
 function dayList(key){ const e=billedMap().get(key); return e?e.list.slice().sort((a,b)=>b.valor-a.valor):[]; }
 function calCard(){
   const f=BRL.format, bm=billedMap(), y=S.calM.getFullYear(), m=S.calM.getMonth(), nd=new Date(y,m+1,0).getDate(), first=new Date(y,m,1).getDay(), todayK=dKey(NOW);
-  let mv=0,mn=0; for(let d=1;d<=nd;d++){ const e=bm.get(dKey(new Date(y,m,d))); if(e){ mv+=e.v; mn+=e.n; } }
+  let mv=0,mn=0; const MU={sbc:{v:0,n:0},maua:{v:0,n:0},outra:{v:0,n:0}}; for(let d=1;d<=nd;d++){ const e=bm.get(dKey(new Date(y,m,d))); if(e){ mv+=e.v; mn+=e.n; const us=unitSums(e); for(const k in MU){ MU[k].v+=us[k].v; MU[k].n+=us[k].n; } } }
   const wk=['dom','seg','ter','qua','qui','sex','sáb'].map(w=>`<div class="cal-w">${w}</div>`).join('');
   let cells=''; for(let i=0;i<first;i++) cells+='<div class="cal-d out"></div>';
   for(let d=1;d<=nd;d++){ const k=dKey(new Date(y,m,d)), e=bm.get(k);
-    cells+=`<button class="cal-d ${e?'has':''} ${k===todayK?'today':''} ${k===S.calSel?'sel':''}" data-act="calDay" data-v="${k}" aria-label="${d} de ${monthLabel(dKey(new Date(y,m,1)).slice(0,7))}${e?': '+e.n+' OS, '+f(e.v):': sem faturamento'}" aria-pressed="${k===S.calSel}"><i>${d}</i>${e?`<b class="num">${shortBRL(e.v)}</b>`:''}</button>`; }
+    cells+=`<button class="cal-d ${e?'has':''} ${e&&unitSums(e).sbc.n&&unitSums(e).maua.n?'two':''} ${k===todayK?'today':''} ${k===S.calSel?'sel':''}" data-act="calDay" data-v="${k}" aria-label="${d} de ${monthLabel(dKey(new Date(y,m,1)).slice(0,7))}${e?': '+e.n+' OS, '+f(e.v):': sem faturamento'}" aria-pressed="${k===S.calSel}"><i>${d}</i>${e?calUnits(e):''}</button>`; }
   const sel=dayList(S.calSel), sv=sel.reduce((t,o)=>t+o.valor,0), [sy,sm,sd]=S.calSel.split('-').map(Number), sdt=new Date(sy,sm-1,sd);
   const dn=['domingo','segunda','terça','quarta','quinta','sexta','sábado'][sdt.getDay()];
-  const rows=sel.map(o=>`<div class="ag-row"><div class="nm"><b>${esc(o.placa||'Sem placa')}</b><span class="ub ${unitOf(o)}" style="display:inline-block">${unitLabel(unitOf(o))}</span><span>${esc(titleCase(o.cliente)||'Sem cliente')}${o.os?' · OS '+esc(o.os):''}${o.servico?' · '+esc(o.servico):''}${o.resp?' · '+esc(o.resp):''}</span></div><div class="v num">${o.valor>0?f(o.valor):'—'}</div></div>`).join('');
+  const rowH=o=>`<div class="ag-row"><div class="nm"><b>${esc(o.placa||'Sem placa')}</b><span class="ub ${unitOf(o)}" style="display:inline-block">${unitLabel(unitOf(o))}</span><span>${esc(titleCase(o.cliente)||'Sem cliente')}${o.os?' · OS '+esc(o.os):''}${o.servico?' · '+esc(o.servico):''}${o.resp?' · '+esc(o.resp):''}</span></div><div class="v num">${o.valor>0?f(o.valor):'—'}</div></div>`; const rows=sel.map(rowH).join('');
   const uS=sel.filter(o=>unitOf(o)==='sbc'), uM=sel.filter(o=>unitOf(o)==='maua'), sumv=a=>a.reduce((t,o)=>t+o.valor,0);
+  const grpH=(u,lab)=>{ const a=sel.filter(o=>unitOf(o)===u); if(!a.length) return ''; return `<div class="cal-grp"><div class="gh"><span class="ubadge ${u==='maua'?'maua':'sbc'}" style="margin:0">${lab}</span><b class="num">${f(sumv(a))}</b><span>${a.length} OS</span></div>${a.map(rowH).join('')}</div>`; };
+  const grouped=grpH('sbc','SBC')+grpH('maua','Mauá')+grpH('outra','Outra unidade');
   return `<section class="card" id="calCard">
     <div class="cal-h"><div><h2 style="margin:0">Faturado por dia<small>Toque num dia para ver o que foi faturado e imprimir só aquele dia</small></h2></div>
       <div class="cal-nav"><button data-act="calNav" data-v="-1" aria-label="Mês anterior">‹</button><b>${monthLabel(dKey(new Date(y,m,1)).slice(0,7))}</b><button data-act="calNav" data-v="1" aria-label="Próximo mês">›</button><button data-act="calToday">Hoje</button></div></div>
     <div class="cal-g">${wk}${cells}</div>
     <p class="note" style="margin:0">No mês: <b>${f(mv)}</b> em ${mn} OS faturadas.</p>
-    <div class="cal-day"><div class="ct"><div><b>${String(sd).padStart(2,'0')}/${String(sm).padStart(2,'0')}/${sy} · ${dn}</b><span>${sel.length?`<b class="num" style="font-size:15px">${f(sv)}</b> faturados · ${sel.length} ${sel.length===1?'OS':'OS'} · <span class="ubadge sbc" style="margin:0 4px 0 6px">SBC</span>${f(sumv(uS))} <span class="ubadge maua" style="margin:0 4px 0 6px">Mauá</span>${f(sumv(uM))}`:'Nenhuma OS faturada neste dia'}</span></div>
-      ${sel.length?`<button data-act="printDay">Imprimir relatório do dia</button>`:''}</div>${rows}</div>
+    <div class="note cal-mon" style="margin:0"><span><span class="ubadge sbc" style="margin:0 4px 0 0">SBC</span><b>${f(MU.sbc.v)}</b> · ${MU.sbc.n} OS</span><span><span class="ubadge maua" style="margin:0 4px 0 0">Mauá</span><b>${f(MU.maua.v)}</b> · ${MU.maua.n} OS</span></div>
+    <div class="cal-day"><div class="ct"><div><b>${String(sd).padStart(2,'0')}/${String(sm).padStart(2,'0')}/${sy} · ${dn}</b><span>${sel.length?`<b class="num" style="font-size:15px">${f(sv)}</b> faturados · ${sel.length} ${sel.length===1?'OS':'OS'}`:'Nenhuma OS faturada neste dia'}</span></div>
+      ${sel.length?`<button data-act="printDay">Imprimir relatório do dia</button>`:''}</div>${grouped}</div>
   </section>`;
 }
 function buildPrintDay(key){
@@ -1773,6 +1788,9 @@ function buildPrintDay(key){
   const dn=['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'][sdt.getDay()];
   const rows=sel.map(o=>`<tr><td class="pl">${esc(o.placa||'—')}</td><td>${esc(o.cliente||'Sem cliente')}${o.os?'<br><small>OS '+esc(o.os)+'</small>':''}${o.servico?'<br><small>Serviço: '+esc(o.servico)+'</small>':''}</td><td>${esc(o.local||'—')}</td><td>${esc(o.resp||'—')}</td><td class="n">${f(o.valor)}</td></tr>`);
   const GS=goalCalc('sbc'), GM=goalCalc('maua'), dS=sel.filter(o=>unitOf(o)==='sbc').reduce((t,o)=>t+o.valor,0), dM=sel.filter(o=>unitOf(o)==='maua').reduce((t,o)=>t+o.valor,0);
+  const rowP=o=>`<tr><td class="pl">${esc(o.placa||'—')}</td><td>${esc(o.cliente||'Sem cliente')}${o.os?'<br><small>OS '+esc(o.os)+'</small>':''}${o.servico?'<br><small>Serviço: '+esc(o.servico)+'</small>':''}</td><td>${esc(o.local||'—')}</td><td>${esc(o.resp||'—')}</td><td class="n">${f(o.valor)}</td></tr>`;
+  const tbl=(u,lab)=>{ const a=sel.filter(o=>unitOf(o)===u); if(!a.length) return ''; const t=a.reduce((x,o)=>x+o.valor,0); return `<h2>${lab} <span><b>${a.length}</b> ${a.length===1?'carro':'carros'} · total <b>${f(t)}</b></span></h2><table class="pr-t"><thead><tr><th>Placa</th><th>Cliente</th><th>Unidade</th><th>Responsável</th><th class="n">Valor</th></tr></thead><tbody>${a.map(rowP).join('')}</tbody><tfoot><tr><td colspan="4">Total ${lab}</td><td class="n">${f(t)}</td></tr></tfoot></table>`; };
+  const printGroups=()=>sel.length? tbl('sbc','Unidade SBC')+tbl('maua','Unidade Mauá')+tbl('outra','Outra unidade')+`<h2>Total do dia <span><b>${sel.length}</b> ${sel.length===1?'carro':'carros'} · <b>${f(sv)}</b></span></h2>` : '<div class="pr-empty">Nenhuma OS faturada neste dia.</div>';
   $('#printRoot').innerHTML=`
   <div class="pr-head"><span class="logo" role="img" aria-label="Truck Center ABC"></span><div><h1>Pitstop · Faturado do dia</h1><p>${String(sd).padStart(2,'0')}/${String(sm).padStart(2,'0')}/${sy} · ${dn} · emitido em ${fmtDT(new Date())}</p></div></div>
   ${S.demo?'<div class="pr-demo">Atenção: este relatório usa dados de demonstração (fictícios). Desligue "Demonstração" no painel para imprimir só o que está na planilha.</div>':''}
@@ -1783,8 +1801,7 @@ function buildPrintDay(key){
     <div><small>SBC no dia</small><b>${f(dS)}</b></div>
     <div><small>Mauá no dia</small><b>${f(dM)}</b></div>
   </div>
-  <h2>Carros faturados <span><b>${sel.length}</b> · total <b>${f(sv)}</b></span></h2>
-  ${sel.length?`<table class="pr-t"><thead><tr><th>Placa</th><th>Cliente</th><th>Unidade</th><th>Responsável</th><th class="n">Valor</th></tr></thead><tbody>${rows.join('')}</tbody><tfoot><tr><td colspan="4">Total · ${sel.length} ${sel.length===1?'carro':'carros'}</td><td class="n">${f(sv)}</td></tr></tfoot></table>`:'<div class="pr-empty">Nenhuma OS faturada neste dia.</div>'}
+  ${printGroups()}
   <div class="pr-foot">Truck Center ABC · Pitstop · Faturado do dia · uso interno</div>`;
 }
 window.addEventListener('afterprint',()=>{ window.__prDay=null; });
