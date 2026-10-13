@@ -1145,18 +1145,18 @@ function hash(s){let h=0;for(let i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))|0}
 
 function viewFatura(){
   const list=osFiltered();
-  const fat=list.filter(o=>o.fat), nfat=list.filter(o=>(!o.fat&&!o.desist));
+  const fat=list.filter(o=>o.fat), nfat=list.filter(o=>(!o.fat&&!o.desist)), des=list.filter(o=>o.desist&&!o.fat);
   const sum=a=>a.reduce((t,o)=>t+o.valor,0);
   const tv=sum(list), fv=sum(fat), nv=sum(nfat);
   const mode=S.fatMode||'nfat';
-  const rows=(mode==='nfat'?nfat:fat).slice().sort((a,b)=>b.valor-a.valor);
+  const rows=(mode==='nfat'?nfat:mode==='des'?des:fat).slice().sort((a,b)=>b.valor-a.valor);
   const shown=rows.slice(0,S.shown.os);
-  const byLocal={}; for(const o of list){const k=o.local||'Sem unidade'; (byLocal[k]=byLocal[k]||{f:0,n:0,fv:0,nv:0}); if(o.fat){byLocal[k].f++;byLocal[k].fv+=o.valor}else{byLocal[k].n++;byLocal[k].nv+=o.valor}}
+  const byLocal={}; for(const o of list){const k=o.local||'Sem unidade'; (byLocal[k]=byLocal[k]||{f:0,n:0,fv:0,nv:0}); if(o.fat){byLocal[k].f++;byLocal[k].fv+=o.valor}else if(!o.desist){byLocal[k].n++;byLocal[k].nv+=o.valor}}
   return `${demoNote()}${filtersBar(true)}
   <div class="grid kpis">
     ${kpi('OS faturadas',NF.format(fat.length),BRL.format(fv))}
     ${kpi('OS não faturadas',NF.format(nfat.length),BRL.format(nv),'hot')}
-    ${kpi('Valor total das OS',BRL.format(tv),`${list.length} OS no período`)}
+    ${kpi('Valor total das OS',BRL.format(tv),`${list.length} OS no período${des.length?' · '+des.length+' desistência'+(des.length>1?'s':''):''}`)}
     ${kpi('Faturado do total',pct(fv,tv)+'%',`${pct(fat.length,list.length)}% das OS`)}
   </div>
   <section class="card"><div class="card-h"><h2>Faturado × a faturar<small>Percentual do valor das OS no período</small></h2></div>
@@ -1165,11 +1165,11 @@ function viewFatura(){
     ${Object.keys(byLocal).length>1?`<div class="grid two" style="margin-top:4px">${Object.entries(byLocal).map(([k,v])=>`<div class="rowbar" style="grid-template-columns:minmax(0,1fr) auto"><div class="nm"><b>${esc(k)}</b><span>${v.f} faturadas · ${v.n} não faturadas</span></div><div class="v num">${BRL.format(v.nv)}<small>a faturar</small></div></div>`).join('')}</div>`:''}
   </section>
   <section class="card"><div class="card-h"><h2>Lista de OS<small>Ordenadas pelo maior valor</small></h2>
-    <div class="seg" role="group" aria-label="Tipo de OS"><button data-act="fatMode" data-v="nfat" aria-pressed="${mode==='nfat'}">Não faturadas</button><button data-act="fatMode" data-v="fat" aria-pressed="${mode==='fat'}">Faturadas</button></div></div>
+    <div class="seg" role="group" aria-label="Tipo de OS"><button data-act="fatMode" data-v="nfat" aria-pressed="${mode==='nfat'}">Não faturadas · ${nfat.length}</button><button data-act="fatMode" data-v="fat" aria-pressed="${mode==='fat'}">Faturadas · ${fat.length}</button><button data-act="fatMode" data-v="des" aria-pressed="${mode==='des'}">Desistências · ${des.length}</button></div></div>
     <div>${shown.length? shown.map(o=>`<div class="rowbar" style="grid-template-columns:minmax(0,1fr) minmax(110px,150px) 110px">
       <div class="nm"><b>${esc(o.placa||'—')}</b> · ${esc(o.cliente||'Sem cliente')}<span>${o.os?'OS '+esc(o.os)+' · ':''}${esc(o.local||'—')} · ${esc(o.resp||'—')}</span></div>
-      <div class="nm" style="font-size:13px;color:var(--muted)">${mode==='nfat'?(o.open?'Em '+STAGES[o.last].toLowerCase():'Finalizada'):'Entrada '+fmtDate(o.base)}</div>
-      <div class="v num">${BRL.format(o.valor)}<small>${mode==='nfat'?'aberta há '+Math.floor((NOW-o.base)/DAY)+' d':'faturada'}</small></div></div>`).join('') : empty('Nenhuma OS nesta lista.')}</div>
+      <div class="nm" style="font-size:13px;color:var(--muted)">${mode==='des'?esc(o.motivo||'Sem motivo informado'):mode==='nfat'?(o.open?'Em '+STAGES[o.last].toLowerCase():'Finalizada'):'Entrada '+fmtDate(o.base)}</div>
+      <div class="v num">${BRL.format(o.valor)}<small>${mode==='des'?'desistiu':mode==='nfat'?'aberta há '+Math.floor((NOW-o.base)/DAY)+' d':'faturada'}</small></div></div>`).join('') : empty('Nenhuma OS nesta lista.')}</div>
     ${rows.length>shown.length?`<button class="more" data-act="moreOs">Ver mais ${Math.min(12,rows.length-shown.length)}</button>`:''}
   </section>`;
 }
