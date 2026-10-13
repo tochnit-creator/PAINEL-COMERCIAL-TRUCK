@@ -481,6 +481,26 @@ main.enter .cols .d i{animation:rise .6s ease both}
 #welcome button:focus-visible{outline:3px solid #fff;outline-offset:3px}
 @media (prefers-reduced-motion:reduce){#welcome,#welcome .w-in{transition:none}}
 @media print{#welcome{display:none!important}}
+
+.cap-hub{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.cap-hub b{font:700 18px var(--f-display);letter-spacing:.03em}
+.cap-hub span{display:block;color:var(--muted);font-size:13px}
+.cap-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.cap-a{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--card-2);color:var(--ink);border-radius:9px;padding:7px 12px;font:600 13px var(--f-body);text-decoration:none;cursor:pointer}
+.cap-a:hover{background:var(--ice-2)}
+.cap-a.red{background:var(--red);border-color:var(--red);color:#fff}.cap-a.red:hover{background:var(--red-dark)}
+.cap-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px 16px;padding:14px 0;border-top:1px solid var(--line)}
+.cap-row:first-of-type{border-top:0}
+.cap-row .nm b{font-size:15px}
+.cap-row .nm .sub{display:block;color:var(--muted);font-size:13px;margin-top:2px}
+.cap-row .nm .nt{display:block;font-size:12.5px;color:var(--ink);opacity:.85;margin-top:4px}
+.cap-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;align-items:center}
+.cap-tags .pill{font-size:11.5px}
+.cap-act{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;align-content:flex-start}
+.cap-st{border:1px solid var(--line);background:var(--card-2);border-radius:8px;padding:6px 8px;font:600 12.5px var(--f-body);color:var(--ink)}
+.cap-st.s1{background:#EAF1F8}.cap-st.s2{background:var(--yellow-soft)}.cap-st.s3{background:rgba(47,165,102,.16)}.cap-st.s4{background:#EEE;color:var(--muted)}
+.cap-pitch ul{margin:6px 0 0;padding-left:18px;font-size:14px;line-height:1.55}
+@media(max-width:620px){.cap-row{grid-template-columns:1fr}.cap-act{justify-content:flex-start}}
 @media(max-width:480px){.cal-d{min-height:42px}.cal-d b{font-size:10.5px}.cal-nav b{min-width:120px}}
 
 
@@ -979,7 +999,7 @@ function workCard(){
 let CH = [];      // chegadas normalizadas (do modo atual)
 let CLI = [];     // clientes normalizados
 let LIVE = null;  // dados lidos da planilha online
-const TABS = [['resumo','Resumo'],['saude','Saúde Pitstop'],['etapas','Tempo por etapa'],['fatura','Faturamento'],['valet','Valetamento'],['visitas','Visitas do mês'],['recompra','Recompra'],['manual','Manual']];
+const TABS = [['resumo','Resumo'],['saude','Saúde Pitstop'],['etapas','Tempo por etapa'],['fatura','Faturamento'],['valet','Valetamento'],['visitas','Visitas do mês'],['recompra','Recompra'],['captacao','Captação'],['manual','Manual']];
 
 function loadModel(){
   NOW = new Date();
@@ -1926,13 +1946,97 @@ function viewManual(){
   ${T('valet','Valetamento','Quantos valetamentos cada responsável fez.',['Total por pessoa e gráfico por dia do mês.'],'Acompanhar o trabalho de busca e entrega dos carros.')}
   ${T('visitas','Visitas do mês','Clientes que mais vieram à oficina no período.',['Ranking por número de entradas de veículo.'],'Reconhecer os melhores clientes.')}
   ${T('recompra','Recompra','Clientes pelo tempo desde a última compra.',['Faixas: passaram do prazo, perto de vencer, alerta, em dia e nunca compraram.','Listas <b>Esfriando</b> e <b>Frequentes</b>.','Botão do <b>WhatsApp</b> em cada cliente para chamar na hora.'],'Trazer o cliente de volta antes que ele esqueça de nós.')}
+  ${T('captacao','Captação','Lista de empresas com frota perto do Hub Mauá para conquistar como clientes novos.',['Empresas de transporte, logística, coleta de resíduos, ônibus e entregas, começando pela mesma avenida do Hub (Av. Papa João XXIII).','Botões de <b>ligar</b>, <b>WhatsApp</b> e <b>como chegar do Hub</b> em cada empresa.','A etiqueta <b>Já está na base de clientes</b> mostra quem já compra de nós.','Marque a situação (a contatar, contatado, visita marcada, virou cliente, sem interesse) para acompanhar a captação.'],'Organizar a prospecção e não esquecer nenhuma empresa da região.')}
   </section>
   <section class="card"><div class="card-h"><h2>Imprimir<small>Três jeitos</small></h2></div>
   <div class="mb" style="padding:0;font-size:14px;line-height:1.55"><ul style="margin:0;padding-left:18px"><li><b>Imprimir relatório</b> (Resumo): escolha seções, status, responsável e local (Todos, Mauá ou SBC).</li><li><b>Imprimir por status</b> (Resumo): uma lista por setor, para entregar e cobrar. Mostra quantas OS são, quanto é do total e das não faturadas.</li><li><b>Dia faturado</b> (Saúde Pitstop): toque no dia do calendário e imprima.</li></ul></div></section>
   <section class="card"><div class="card-h"><h2>Palavras do painel<small>Glossário</small></h2></div><dl>${G.map(g=>`<dt>${g[0]}</dt><dd>${g[1]}</dd>`).join('')}</dl></section>
   </div>`;
 }
-const VIEWS={manual:viewManual,resumo:viewResumo,saude:viewSaude,etapas:viewEtapas,fatura:viewFatura,valet:viewValet,visitas:viewVisitas,recompra:viewRecompra};
+
+/* ============ CAPTAÇÃO DE NOVOS CLIENTES ============ */
+const HUB_END = "Av. Papa João XXIII, 2199 - Mauá/SP";
+const CAP_SEGS = ["Transportadora", "Logística", "Resíduos e coleta", "Ônibus e passageiros", "Entregas (last mile)", "Água e serviços"];
+const CAP_ST = ['A contatar','Contatado','Visita marcada','Virou cliente','Sem interesse'];
+const CAP = [["Transportes e Logística Mauá (Transportadora Mauá Ltda.)", "Transportadora", "Av. Papa João XXIII, 4234", "Sertãozinho", ["(11) 4543-8000", "(11) 4543-8008"], "E-mail: tmmaua@tmmaua.com.br. Já anunciou caminhões e implementos para venda/locação (2014), então tem frota de caminhões.", "Site da empresa"], ["Bozzi Logística e Transporte Ltda", "Logística", "Av. Papa João XXIII, 1957", "Loteamento Industrial Coral", ["(11) 2948-2848"], "Na mesma avenida do Hub, a poucos números de distância.", "Solutudo"], ["Rápido 900 de Transportes Rodoviários Ltda", "Transportadora", "Av. Papa João XXIII, 2100", "Vila Carlina", ["(11) 2632-0926"], "Mesmo endereço do número 2100, a poucos números do Hub.", "Solutudo"], ["Expresso Salomé Ltda", "Transportadora", "Av. Papa João XXIII, 2100", "Vila Noêmia", ["(17) 3215-8181"], "Telefone com DDD 17 (interior): provavelmente a matriz. Confirmar quem decide a manutenção em Mauá.", "Solutudo"], ["Serv-Agua ABC Ltda", "Água e serviços", "Av. Papa João XXIII, 2257", "Vila Noêmia", ["(11) 4544-1582"], "Segmento deduzido pelo nome (água/serviços). Confirmar se tem caminhões-pipa.", "Solutudo"], ["Transportadora Moromizato", "Transportadora", "Av. Papa João XXIII, 1103", "Parque São Vicente", ["(11) 4544-1074"], "", "Solutudo"], ["IC Transportes Ltda.", "Transportadora", "Av. Papa João XXIII, 2843", "Parque São Vicente", ["(71) 98605-9376", "(71) 98207-6941"], "Telefones com DDD 71 (Bahia): confirmar o contato local.", "Solutudo"], ["BL Log Transportes Ltda", "Transportadora", "Av. Papa João XXIII, 4647", "Loteamento Industrial Coral", ["(11) 2919-5783"], "", "Solutudo"], ["Trasulix – Transportes de Sucata e Lixo Industrial Ltda", "Resíduos e coleta", "Av. Papa João XXIII, 4731", "Sertãozinho", [], "Caminhões de sucata e lixo industrial. A fonte não traz telefone: buscar no mapa.", "Solutudo"], ["Planeta Ambiental – Gerenciamento e Transportes de Resíduos Industriais Ltda", "Resíduos e coleta", "Rua Antonio Luiz Ferreira, 106", "Vila Carlina", ["(99) 6696-6500"], "O telefone da fonte parece incompleto: confirmar antes de ligar.", "Solutudo"], ["JSL S.A.", "Logística", "Av. Ayrton Senna da Silva, 2282", "Vila Santa Cecília", ["(11) 2377-7043"], "Operador logístico de grande porte. Provável contrato corporativo, falar com compras/manutenção da filial.", "Solutudo"], ["Alfatech Serviços de Transportes Ltda", "Transportadora", "Av. Alberto Soares Sampaio, 398", "Capuava", ["(11) 98328-4678"], "Perto do polo petroquímico.", "Solutudo"], ["Transportadora Flotilha Ltda", "Transportadora", "Av. Alberto Soares Sampaio, 1240", "Capuava", ["(11) 3048-8716"], "", "Solutudo"], ["TTL – Tecnologia de Transporte e Logística Ltda", "Logística", "Av. Guaraciaba, 240", "Sertãozinho", ["(11) 4543-6737"], "Mesmo bairro do trecho da Papa João XXIII.", "Solutudo"], ["Log CDM Logística Ltda", "Logística", "Rua Presidente Marechal Hermes da Fonseca, 307", "Parque São Vicente", ["(11) 4544-7937"], "", "Solutudo"], ["MG Transporte e Logística Ltda", "Logística", "Rua Juscelino Kubitschek de Oliveira, 453", "Parque São Vicente", ["(11) 2629-9434"], "", "Solutudo"], ["Rota 33 Transporte e Locação Ltda", "Transportadora", "Rua Pedro Galvano, 08", "Parque São Vicente", ["(11) 4072-5607", "(11) 97356-0182"], "Também trabalha com locação: pode ter veículos de terceiros para manutenção.", "Solutudo"], ["Transportadora Paz Express Ltda", "Transportadora", "Avenida dos Sertanistas, 231", "Jardim Santo André", ["(11) 4513-4520"], "", "Solutudo"], ["Transportadora Império FM", "Transportadora", "Rua Washington Luiz, 3384", "Vila Magini", ["(11) 4514-1490"], "", "Solutudo"], ["Atlas Prime Logística e Transportes Ltda", "Logística", "Rua Doutor João Carlos Azevedo, 535", "Parque Bandeirantes", ["(11) 97486-9093"], "", "Solutudo"], ["Transbarcello Transportes Ltda", "Transportadora", "Rua Vinte e Um de Abril, 64", "Vila Bocaina", ["(11) 4555-2729"], "", "Solutudo"], ["TMF Transportes Internacionais Ltda", "Transportadora", "Rua Campos Sales, 167", "Vila Bocaina", ["(11) 3783-3766"], "", "Solutudo"], ["Metropole Transportes", "Transportadora", "Rua Anchieta, 35", "Vila Bocaina", ["(11) 4252-1025"], "", "Solutudo"], ["Dell Transportes", "Transportadora", "Avenida Itapark, 2941", "Jardim Itapark", ["(11) 5474-1833"], "", "Solutudo"], ["Libune Log Transportes Eireli", "Transportadora", "Rua Jorge Monteleone, 177", "Jardim Sonia Maria", ["(11) 4555-7573"], "", "Solutudo"], ["Lupa Transportes Last Miler ABC Ltda", "Entregas (last mile)", "Avenida Capitão João, 1419", "Matriz", ["(11) 4975-9414"], "Entregas urbanas: frota de utilitários e caminhões leves.", "Solutudo"], ["S & R Serviços de Entrega Ltda", "Entregas (last mile)", "Rua Francisco Alves, 570", "Jardim Sonia Maria", ["(11) 2783-4800"], "", "Solutudo"], ["Suzantur Mauá (transporte coletivo)", "Ônibus e passageiros", "Garagem em Mauá (confirmar endereço)", "Mauá", [], "Concessionária do transporte coletivo de Mauá (contrato prorrogado por 10 anos em 2024, segundo o Diário do Transporte). A fonte não traz endereço nem telefone: buscar no mapa.", "Diário do Transporte"]].map(a=>({id:norm(a[0]).replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''),nome:a[0],seg:a[1],addr:a[2],bairro:a[3],tels:a[4],nota:a[5],fonte:a[6]}));
+S.cap=S.cap||{seg:'all',q:'',novos:false,st:'all'};
+function capLoad(){ try{ return JSON.parse(localStorage.getItem('tabc_capt')||'{}')||{}; }catch(e){ return {}; } }
+function capSave(m){ try{ localStorage.setItem('tabc_capt',JSON.stringify(m)); }catch(e){} }
+function capAv(p){ const m=/Papa Jo[ãa]o XXIII,\s*(\d+)/i.exec(p.addr); return m?+m[1]:null; }
+const CAP_STOP=new Set(['ltda','eireli','me','epp','sa','s','a','e','de','do','da','dos','das','transportes','transporte','transportadora','logistica','servicos','servico','rodoviarios','internacionais','tecnologia','maua','abc','expresso']);
+function capToks(n){ return norm(String(n).replace(/\(.*?\)/g,'')).split(/[^a-z0-9]+/).filter(x=>x&&!CAP_STOP.has(x)); }
+function capJaCliente(p){
+  const t=capToks(p.nome.replace(/ – .*$/,'')); if(!t.length) return null;
+  const T=new Set(t), len=t.join('').length;
+  return (typeof CLI!=='undefined'?CLI:[]).find(c=>{ const w=capToks(c.nome), W=new Set(w);
+    if(!w.length) return false;
+    if(w.length===t.length && t.every(x=>W.has(x))) return true;            // mesmo nome
+    return t.length>=2 && len>=10 && t.every(x=>W.has(x)); })||null;       // nome parecido, com 2+ palavras fortes
+}
+function capTel(t){ return String(t).replace(/\D/g,''); }
+function capMobile(t){ const d=capTel(t); return d.length===11&&d[2]==='9'; }
+function capMapsDir(p){ return 'https://www.google.com/maps/dir/?api=1&origin='+encodeURIComponent(HUB_END)+'&destination='+encodeURIComponent(p.addr+', '+p.bairro+', Mauá, SP'); }
+function capMapsFind(p){ return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(p.nome.replace(/\(.*?\)/g,'')+' Mauá SP'); }
+function viewCaptacao(){
+  const st=capLoad(), C=S.cap, q=norm(C.q);
+  const list=CAP.map(p=>({p,av:capAv(p),cli:capJaCliente(p),s:+((st[p.id]||{}).s||0)}));
+  const same=list.filter(x=>x.av!=null);
+  const view=list.filter(x=>(C.seg==='all'||x.p.seg===C.seg)&&(!C.novos||!x.cli)&&(C.st==='all'||String(x.s)===C.st)&&(!q||norm(x.p.nome+' '+x.p.addr+' '+x.p.bairro+' '+x.p.seg).includes(q)))
+    .sort((a,b)=>((a.av!=null?Math.abs(a.av-2199):1e9)-(b.av!=null?Math.abs(b.av-2199):1e9))||a.p.nome.localeCompare(b.p.nome,'pt-BR'));
+  const cnt=k=>list.filter(x=>k==='all'||x.p.seg===k).length;
+  const segBtns=['all',...CAP_SEGS].filter(k=>cnt(k)>0).map(k=>`<button data-act="capSeg" data-v="${esc(k)}" aria-pressed="${C.seg===k}">${k==='all'?'Todos':esc(k)} · ${cnt(k)}</button>`).join('');
+  const near=(q)=>'https://www.google.com/maps/search/'+encodeURIComponent(q+' perto de '+HUB_END);
+  const rows=view.map(({p,av,cli,s})=>{
+    const wa=p.tels.find(capMobile), fixo=p.tels.filter(t=>!capMobile(t));
+    return `<div class="cap-row"><div class="nm"><b>${esc(p.nome)}</b>
+      <span class="sub">${esc(p.addr)} · ${esc(p.bairro)}${p.tels.length?' · '+p.tels.map(esc).join(' / '):' · telefone não encontrado'}</span>
+      <div class="cap-tags"><span class="pill grey">${esc(p.seg)}</span>${av!=null?`<span class="pill amber">Mesma avenida do Hub</span>`:''}${cli?`<span class="pill green" title="${esc(cli.nome)}">Já está na base de clientes</span>`:''}</div>
+      ${p.nota?`<span class="nt">${esc(p.nota)}</span>`:''}</div>
+      <div class="cap-act"><select class="cap-st s${s}" data-capst="${p.id}" aria-label="Situação de ${esc(p.nome)}">${CAP_ST.map((n,i)=>`<option value="${i}" ${i===s?'selected':''}>${n}</option>`).join('')}</select>
+        ${p.tels.length?`<a class="cap-a" href="tel:+55${capTel(p.tels[0])}">Ligar</a>`:''}
+        ${wa?`<a class="cap-a" target="_blank" rel="noopener" href="https://wa.me/55${capTel(wa)}?text=${encodeURIComponent('Olá! Sou da Truck Center ABC (Pitstop), em Mauá. Podemos conversar sobre a manutenção da frota de vocês?')}">WhatsApp</a>`:''}
+        <a class="cap-a" target="_blank" rel="noopener" href="${p.tels.length||av!=null?capMapsDir(p):capMapsFind(p)}">Como chegar do Hub</a></div></div>`; }).join('');
+  const nCli=list.filter(x=>x.cli).length, nCont=list.filter(x=>x.s>=1&&x.s<=3).length, nGanho=list.filter(x=>x.s===3).length;
+  return `${demoNote()}
+  <section class="card"><div class="card-h cap-hub"><div><h2 style="margin:0">Captação de novos clientes<small>Empresas com frota de caminhões, ônibus ou veículos de coleta em Mauá, a começar pela avenida do Hub</small></h2></div></div>
+    <div class="cap-hub" style="margin-top:6px"><div><b>Hub Mauá</b><span>${esc(HUB_END)}</span></div>
+      <a class="cap-a red" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(HUB_END)}">Abrir o Hub no mapa</a></div>
+    <div class="cap-links"><span style="font-size:13px;color:var(--muted);align-self:center">Buscar mais perto do Hub no Google Maps:</span>
+      <a class="cap-a" target="_blank" rel="noopener" href="${near('transportadora')}">Transportadoras</a>
+      <a class="cap-a" target="_blank" rel="noopener" href="${near('empresa de ônibus fretamento')}">Ônibus e fretamento</a>
+      <a class="cap-a" target="_blank" rel="noopener" href="${near('coleta de resíduos caminhão')}">Coleta de lixo e resíduos</a>
+      <a class="cap-a" target="_blank" rel="noopener" href="${near('centro de distribuição')}">Centros de distribuição</a>
+      <a class="cap-a" target="_blank" rel="noopener" href="${near('empresa de caminhão basculante areia entulho')}">Caçambas e entulho</a></div></section>
+  <div class="grid kpis">
+    ${kpi('Empresas na lista',NF.format(list.length),'em Mauá e região')}
+    ${kpi('Na avenida do Hub',NF.format(same.length),'Av. Papa João XXIII')}
+    ${kpi('Já são clientes',NF.format(nCli),'achadas na base de clientes')}
+    ${kpi('Em contato',NF.format(nCont),nGanho+' viraram cliente')}
+  </div>
+  <section class="card"><div class="toolbar"><input class="search" id="qCap" type="search" placeholder="Buscar empresa, rua ou bairro" value="${esc(C.q)}" aria-label="Buscar empresa">
+      <label style="display:inline-flex;gap:6px;align-items:center;font-size:13.5px"><input id="capNovos" type="checkbox" ${C.novos?'checked':''}> Só quem ainda não é cliente</label>
+      <select id="capStF" class="cap-st" aria-label="Filtrar por situação"><option value="all">Todas as situações</option>${CAP_ST.map((n,i)=>`<option value="${i}" ${C.st===String(i)?'selected':''}>${n}</option>`).join('')}</select></div>
+    <div class="seg" role="group" aria-label="Segmento" style="margin-top:10px;flex-wrap:wrap">${segBtns}</div>
+    <div style="margin-top:6px">${rows||empty('Nenhuma empresa com esses filtros.')}</div>
+    <p class="note" style="margin:10px 0 0">As empresas vêm de diretórios públicos (Solutudo, site da própria transportadora e Diário do Transporte), então confirme telefone, porte e frota antes de visitar. A situação de cada empresa fica salva só neste navegador. Mais perto do Hub primeiro: a ordem usa o número do endereço na Av. Papa João XXIII.</p></section>
+  <section class="card cap-pitch"><div class="card-h"><h2>Roteiro de abordagem<small>Ideias para a primeira conversa com quem tem frota</small></h2></div>
+    <ul><li><b>Abertura:</b> somos a Truck Center ABC (Pitstop), aqui no Hub de Mauá, pertinho de vocês.</li>
+    <li><b>Dor da frota:</b> caminhão parado é diária perdida. Mostrar o painel de tempo por etapa: orçamento, aprovação e peças, tudo com prazo.</li>
+    <li><b>Facilidade:</b> valetamento (buscamos e levamos o veículo) e orçamento detalhado por placa.</li>
+    <li><b>Pedido pequeno:</b> começar por uma placa ou uma revisão, para o cliente conhecer o serviço.</li>
+    <li><b>Fechamento:</b> registrar o contato na coluna de situação e marcar a visita.</li></ul></section>`;
+}
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-act="capSeg"]'); if(!b) return; S.cap.seg=b.dataset.v; render();
+});
+document.addEventListener('change',e=>{
+  const t=e.target; if(!t) return;
+  if(t.dataset&&t.dataset.capst){ const m=capLoad(); m[t.dataset.capst]={s:+t.value,d:new Date().toISOString().slice(0,10)}; capSave(m); render(); }
+  else if(t.id==='capNovos'){ S.cap.novos=t.checked; render(); }
+  else if(t.id==='capStF'){ S.cap.st=t.value; render(); }
+});
+document.addEventListener('input',e=>{ if(e.target&&e.target.id==='qCap'){ S.cap.q=e.target.value; render(); } });
+const VIEWS={captacao:viewCaptacao,manual:viewManual,resumo:viewResumo,saude:viewSaude,etapas:viewEtapas,fatura:viewFatura,valet:viewValet,visitas:viewVisitas,recompra:viewRecompra};
 function render(){
   $('#tabs').innerHTML=TABS.map(([k,n])=>`<button class="tab" role="tab" data-act="tab" data-v="${k}" aria-selected="${S.tab===k}">${n}</button>`).join('');
   const y=window.scrollY;
