@@ -808,7 +808,7 @@ function buildChegada(rows, now){
       placa:String(r[1]??'').trim(), colab:String(r[2]??'').trim(), local:String(r[3]??'').trim(),
       cliente:String(r[4]??'').trim(), os:r[6]==null||r[6]===''?'':String(r[6]).replace(/\.0$/,''),
       fat:norm(r[7]).startsWith('sim'), desist, motivo:String(r[17]??'').trim(), servico:String(r[18]??'').trim(), resp:String(r[8]??'').trim(), valor:pn(r[9]),
-      ts, base:ts[present[0]], steps, last, open,
+      ts, fatTs:pd(r[19]), base:ts[present[0]], steps, last, open,
       openMs: open? workMs(ts[lastTs],now) : null, statusRaw:String(r[5]??'').trim(),
       cycle: ts[6]&&ts[present[0]] ? workMs(ts[present[0]],ts[6]) : null
     });
@@ -1742,7 +1742,7 @@ document.addEventListener('change',e=>{
 
 
 /* ============ CALENDÁRIO DE FATURAMENTO ============ */
-function billDate(o){ return o.ts&&o.ts[6]?o.ts[6]:o.base; }
+function billDate(o){ return o.fatTs?o.fatTs:(o.ts&&o.ts[6]?o.ts[6]:o.base); }   // coluna T (data do faturamento); sem ela, usa o Finalizado
 function dKey(d){ const p=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); }
 function billedMap(){ const m=new Map(); for(const o of CH){ if(!o.fat||o.desist) continue; const k=dKey(billDate(o)); const e=m.get(k)||{n:0,v:0,list:[]}; e.n++; e.v+=o.valor; e.list.push(o); m.set(k,e); } return m; }
 function shortBRL(v){ return v>=1000?(v/1000).toFixed(v>=10000?0:1).replace('.',',')+'k':String(Math.round(v)); }
