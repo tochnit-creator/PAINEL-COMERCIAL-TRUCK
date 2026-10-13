@@ -461,6 +461,26 @@ main.enter .cols .d i{animation:rise .6s ease both}
 .cal-grp .gh b{font:700 15px var(--f-display)}.cal-grp .gh span:last-child{color:var(--muted);font-size:13px}
 .cal-mon{display:flex;gap:14px;flex-wrap:wrap}
 @media(max-width:480px){.cal-d .cu{font-size:9.5px}.cal-d .cu em{font-size:8px}.cal-d.has.two{min-height:50px}}
+
+#welcome{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:28px 20px;cursor:pointer;
+  background:radial-gradient(60% 55% at 50% 50%,rgba(14,17,20,.28),transparent 75%),rgba(14,17,20,.4);
+  -webkit-backdrop-filter:blur(16px) saturate(1.05);backdrop-filter:blur(16px) saturate(1.05);opacity:0;transition:opacity .5s ease}
+#welcome[hidden]{display:none!important}
+#welcome.on{opacity:1}
+#welcome.out{opacity:0;pointer-events:none}
+#welcome .w-in{max-width:880px;text-align:center;color:#fff;display:flex;flex-direction:column;align-items:center;gap:18px;transform:translateY(14px);transition:transform .7s cubic-bezier(.2,.7,.2,1)}
+#welcome.on .w-in{transform:none}
+#welcome .w-k{font:600 12px var(--f-body);letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.88);text-shadow:0 1px 12px rgba(0,0,0,.5)}
+#welcome .w-k::before,#welcome .w-k::after{content:"";display:inline-block;width:28px;height:2px;background:var(--red);vertical-align:middle;margin:0 12px}
+#welcome blockquote{margin:0;font:700 clamp(28px,5.2vw,54px)/1.12 var(--f-display);letter-spacing:.01em;text-wrap:balance;text-shadow:0 2px 30px rgba(0,0,0,.6),0 1px 3px rgba(0,0,0,.35)}
+#welcome blockquote::before{content:"\201C";display:block;font-size:1.7em;line-height:.5;height:.45em;color:var(--red);text-shadow:none}
+#welcome cite{font:600 clamp(15px,2vw,19px) var(--f-body);font-style:normal;letter-spacing:.06em;color:#fff;text-shadow:0 1px 14px rgba(0,0,0,.6)}
+#welcome cite::before{content:"— "}
+#welcome button{margin-top:10px;border:0;border-radius:10px;background:var(--red);color:#fff;padding:12px 26px;font:700 14px var(--f-body);letter-spacing:.04em;cursor:pointer;box-shadow:0 10px 30px -10px rgba(208,20,27,.8)}
+#welcome button:hover{background:var(--red-dark)}
+#welcome button:focus-visible{outline:3px solid #fff;outline-offset:3px}
+@media (prefers-reduced-motion:reduce){#welcome,#welcome .w-in{transition:none}}
+@media print{#welcome{display:none!important}}
 @media(max-width:480px){.cal-d{min-height:42px}.cal-d b{font-size:10.5px}.cal-nav b{min-width:120px}}
 
 
@@ -694,6 +714,7 @@ main.enter .dbar i,main.enter .rs-bar i{animation:grow .8s cubic-bezier(.2,.7,.2
   </form>
 </div>
 
+<div id="welcome" role="dialog" aria-modal="true" aria-label="Frase do dia" hidden><div class="w-in"><div class="w-k" id="wDate"></div><blockquote id="wQuote"></blockquote><cite id="wAuth"></cite><button type="button" id="wGo">Começar o dia</button></div></div>
 <div id="app" class="hidden">
   <header class="top">
     <div class="top-in">
@@ -2016,6 +2037,22 @@ $('#gateForm').addEventListener('submit',e=>{
     unlock();
   } else { $('#gateErr').textContent='Senha incorreta. Tente de novo.'; $('#pw').select(); }
 });
+
+/* ============ FRASE DO DIA (tela após o login) ============ */
+const FRASES=[["O sucesso é a soma de pequenos esforços, repetidos dia após dia.", "Robert Collier"], ["Nós somos o que fazemos repetidamente. A excelência, então, não é um ato, mas um hábito.", "Will Durant"], ["Tudo parece impossível até que seja feito.", "Nelson Mandela"], ["A coragem não é a ausência do medo, mas o triunfo sobre ele.", "Nelson Mandela"], ["A melhor maneira de prever o futuro é criá-lo.", "Peter Drucker"], ["A vida é 10% o que acontece comigo e 90% de como eu reajo a isso.", "Charles Swindoll"], ["Não é porque as coisas são difíceis que não ousamos; é porque não ousamos que elas são difíceis.", "Sêneca"], ["Nenhum vento sopra a favor de quem não sabe para onde ir.", "Sêneca"], ["Faça o que puder, com o que tiver, onde estiver.", "Theodore Roosevelt"], ["Quem tem um porquê para viver suporta quase qualquer como.", "Friedrich Nietzsche"], ["O único lugar onde o sucesso vem antes do trabalho é no dicionário.", "Vidal Sassoon"], ["Não falhei. Apenas descobri dez mil maneiras que não funcionam.", "Thomas Edison"], ["A oportunidade é perdida pela maioria das pessoas porque vem vestida de macacão e parece trabalho.", "Thomas Edison"], ["A sorte favorece a mente preparada.", "Louis Pasteur"], ["A única maneira de fazer um excelente trabalho é amar o que você faz.", "Steve Jobs"], ["Reunir-se é um começo; manter-se unido é um progresso; trabalhar unido é um sucesso.", "Henry Ford"], ["Quer você acredite que pode, quer acredite que não pode, você está certo.", "Henry Ford"], ["Qualidade significa fazer certo quando ninguém está olhando.", "Henry Ford"], ["O trabalho persistente vence tudo.", "Virgílio"], ["O melhor momento para plantar uma árvore foi há vinte anos. O segundo melhor é agora.", "Provérbio chinês"], ["Se quer ir rápido, vá sozinho. Se quer ir longe, vá acompanhado.", "Provérbio africano"], ["A diferença entre o impossível e o possível está na determinação de uma pessoa.", "Tommy Lasorda"], ["Grandes realizações são feitas por uma soma de pequenas realizações.", "Vincent van Gogh"], ["O segredo para progredir é começar.", "Mark Twain"], ["Aprender é a única coisa de que a mente nunca se cansa, nunca tem medo e nunca se arrepende.", "Leonardo da Vinci"], ["Seus clientes mais insatisfeitos são a sua maior fonte de aprendizado.", "Bill Gates"], ["Faça de cada dia a sua obra-prima.", "John Wooden"], ["O que a mente do homem pode conceber e acreditar, ela pode conquistar.", "Napoleon Hill"], ["A disciplina é a ponte entre metas e realizações.", "Jim Rohn"], ["Não tenha medo de abrir mão do bom para perseguir o ótimo.", "John D. Rockefeller"], ["A persistência é o caminho do êxito.", "Charles Chaplin"], ["Você não precisa ser ótimo para começar, mas precisa começar para ser ótimo.", "Zig Ziglar"], ["Seja tão bom que eles não possam ignorar você.", "Steve Martin"], ["O maior erro que você pode cometer na vida é ter medo o tempo todo de errar.", "Elbert Hubbard"], ["O sucesso nasce do querer, da determinação e da persistência em se chegar a um objetivo.", "José de Alencar"], ["Feliz aquele que transfere o que sabe e aprende o que ensina.", "Cora Coralina"], ["O importante não é o que fazem de nós, mas o que nós mesmos fazemos do que fizeram de nós.", "Jean-Paul Sartre"], ["Quanto mais eu treino, mais sorte eu tenho.", "Gary Player"], ["Aquilo que temos de aprender a fazer, aprendemos fazendo.", "Aristóteles"], ["O talento ganha jogos, mas o trabalho em equipe e a inteligência ganham campeonatos.", "Michael Jordan"], ["Se você quer ser bem-sucedido, precisa ter dedicação total, buscar seu último limite e dar o melhor de si.", "Ayrton Senna"], ["O sucesso não é acidente. É trabalho duro, perseverança, estudo, sacrifício e, acima de tudo, amor pelo que você faz.", "Pelé"], ["A maneira de começar é parar de falar e começar a fazer.", "Walt Disney"], ["Eu odiava cada minuto do treino, mas dizia: não desista. Sofra agora e viva o resto da vida como um campeão.", "Muhammad Ali"], ["O obstáculo ao caminho torna-se o próprio caminho.", "Marco Aurélio"], ["Tudo o que um sonho precisa para ser realizado é alguém que acredite que ele possa ser realizado.", "Roberto Shinyashiki"], ["O sucesso costuma vir para quem está ocupado demais para procurá-lo.", "Henry David Thoreau"], ["Não se pode ensinar nada a um homem; só se pode ajudá-lo a encontrar a resposta dentro de si mesmo.", "Galileu Galilei"], ["A vida é uma peça de teatro que não permite ensaios.", "Charles Chaplin"], ["Quando uma porta se fecha, outra se abre; mas olhamos tanto para a porta fechada que não vemos a que se abriu.", "Alexander Graham Bell"], ["A criatividade é a inteligência se divertindo.", "Albert Einstein"], ["Quem quer fazer alguma coisa encontra um meio; quem não quer, encontra uma desculpa.", "Provérbio árabe"]];
+function fraseDoDia(d){ d=d||new Date(); const n=Math.floor(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/864e5); return FRASES[n%FRASES.length]; }
+function showWelcome(){
+  const el=document.getElementById('welcome'); if(!el) return;
+  const d=new Date(), f=fraseDoDia(d), h=d.getHours(), sd=h<12?'Bom dia':h<18?'Boa tarde':'Boa noite';
+  document.getElementById('wDate').textContent=sd+' · '+d.toLocaleDateString('pt-BR',{day:'numeric',month:'long'});
+  document.getElementById('wQuote').textContent=f[0]; document.getElementById('wAuth').textContent=f[1];
+  el.hidden=false; el.classList.remove('out'); requestAnimationFrame(()=>requestAnimationFrame(()=>el.classList.add('on')));
+  const close=()=>{ el.classList.add('out'); el.classList.remove('on'); document.removeEventListener('keydown',onKey); setTimeout(()=>{ el.hidden=true; },520); };
+  const onKey=e=>{ if(e.key==='Escape'||e.key==='Enter'||e.key===' ') close(); };
+  el.onclick=close; document.addEventListener('keydown',onKey);
+  const b=document.getElementById('wGo'); if(b) setTimeout(()=>b.focus({preventScroll:true}),80);
+}
+$('#gateForm').addEventListener('submit',()=>{ try{ if(sessionStorage.getItem('tabc_ok')==='1') showWelcome(); }catch(e){} });
 $('#hdrSearch').addEventListener('submit',e=>{ e.preventDefault(); S.qOs=$('#gq').value; S.shown.os=12; if(S.tab!=='etapas'){ setTab('etapas'); } else render(); $('#gq').value=''; });
 $('#liveBtn').addEventListener('click',()=>{ refreshLive(); });
 $('#lockBtn').addEventListener('click',()=>{
