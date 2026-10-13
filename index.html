@@ -834,7 +834,8 @@ function buildChegada(rows, now){
     }
     const lastTs=present[present.length-1], stF=stageFromStatus(r[5]);
     const last=stF!=null?stF:lastTs;
-    const desist=norm(r[16]).startsWith('sim'); const open = last<6 && !desist;
+    const fatOk=norm(r[7]).startsWith('sim'); const desist=norm(r[16]).startsWith('sim') && !fatOk;   // faturou = fechou o pedido: não é desistência, mesmo com a coluna Q marcada
+    const open = last<6 && !desist;
     out.push({
       placa:String(r[1]??'').trim(), colab:String(r[2]??'').trim(), local:String(r[3]??'').trim(),
       cliente:String(r[4]??'').trim(), os:r[6]==null||r[6]===''?'':String(r[6]).replace(/\.0$/,''),
